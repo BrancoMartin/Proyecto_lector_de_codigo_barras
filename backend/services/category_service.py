@@ -7,7 +7,11 @@ from repositories.attribute_repository import AttributeRepository
 from repositories.product_repository import ProductRepository
 from models.category import Category
 from langchain_groq import ChatGroq
+from dotenv import load_dotenv
 import os
+load_dotenv()
+
+
 class CategoryService:
     
     

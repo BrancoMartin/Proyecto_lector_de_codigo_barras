@@ -10,9 +10,10 @@ from models.product import Product
 import json  
 import re  
 from langchain_groq import ChatGroq
+from dotenv import load_dotenv
+
 import os
-
-
+load_dotenv()
 
 class AIPriceService:
     

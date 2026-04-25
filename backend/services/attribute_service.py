@@ -7,9 +7,13 @@ from repositories.attribute_repository import AttributeRepository
 from repositories.product_repository import ProductRepository
 from models.attribute import Attribute
 from langchain_groq import ChatGroq
+from dotenv import load_dotenv
 import os
+load_dotenv()
 
 class AttributeService:
+
+    print("API KEY: ",os.environ.get("GROQ_API_KEY"))
     
     
     def __init__(self, db: Session):
@@ -68,22 +72,36 @@ class AttributeService:
         categories_str = ", ".join([c.category for c in categories])
 
         template = """
-    Eres un asistente que crea atributos de productos basándose en sus categorías.
-    Dado un producto y sus categorías, devolvé ÚNICAMENTE un JSON válido con los atributos a crear.
+Eres un experto en catalogación de productos para e-commerce.
 
-    Nombre del producto: {product_name}
-    Descripción: {description}
-    Categorías disponibles: {categories}
+## Tarea
+Dado un producto y una lista de categorías de atributos, generá exactamente UN atributo por categoría que describa al producto de forma precisa y coherente.
 
-    Para cada categoría, creá un atributo que describa al producto en esa categoría.
-    Por ejemplo: si la categoría es "material" y el producto es una silla de madera, el atributo sería "madera".
+## Producto
+- **Nombre:** {product_name}
+- **Descripción:** {description}
 
-    Respondé ÚNICAMENTE con un JSON válido, sin texto adicional, sin explicaciones, sin markdown y en español.
-    El formato debe ser exactamente este:
-    {{"attributes": [{{"attribute": "nombre_atributo", "category_name": "nombre_categoria"}}, {{"attribute": "otro_atributo", "category_name": "otra_categoria"}}]}}
+## Categorías disponibles
+{categories}
 
-    JSON:
-    """
+## Reglas estrictas
+1. Cada atributo DEBE ser un valor válido y específico que pertenezca semánticamente a su categoría.
+2. El atributo es el VALOR de la categoría, no una descripción del producto.
+3. Respondé SOLO con el JSON, sin texto adicional ni markdown.
+
+## Ejemplos correctos vs incorrectos
+| Categoría | ✅ Correcto | ❌ Incorrecto |
+|-----------|------------|--------------|
+| Marca     | Nike       | Zapatilla deportiva |
+| Material  | Cuero      | De buena calidad    |
+| Color     | Rojo       | Producto rojo       |
+| Talle     | 42         | Número de calzado   |
+
+## Formato de respuesta
+{{"attributes": [{{"attribute": "valor_especifico", "category_name": "nombre_categoria"}}]}}
+
+JSON:
+"""
         
 
         prompt = PromptTemplate(
@@ -105,22 +123,21 @@ class AttributeService:
             data = json.loads(clean)
             attributes_data = data.get("attributes", [])
 
-            
+            print("ATRIBUTOS GENERADOS POR LA IA: ", attributes_data)
             
             for attr in attributes_data:
                 # Buscar la categoría correspondiente
                 category = next((c for c in categories if c.category == attr.get("category_name")), None)
                 category_id = category.id if category else None
 
-
-                amount_products = self.update_amount_products(attr["attribute"])
+                amount_products = len(self.product.get_products_by_name_attribute(attr["attribute"]))
 
                 print("AMOUNT PRODUCTS",amount_products)
 
                 new_attribute = Attribute(
                     attribute=attr["attribute"],
                     category_id=category_id, 
-                    amount_products=amount_products
+                    amount_products=amount_products + 1
                 )
 
                 
@@ -142,26 +159,4 @@ class AttributeService:
              
         return attributes    
 
-    def update_amount_products(self, name_attribute):
-        
-        attributes = self.attribute.get_all()
-        
-        amount_products = 0
-        
-        for attr in attributes: 
-            if attr.attribute == name_attribute:
-
-                amount_products = attr.amount_products =+ 1
-                attribute = Attribute(
-                    attribute=attr.attribute,
-                    category_id=attr.category_id,
-                    amount_products = amount_products
-                )
-
-                response = self.attribute.update(attribute)
-
-                if not response: 
-                    raise ValueError("error al querer actualizar el atributo en el update_amount_products del attribute service")
-                    
-        return amount_products
-                
+    
