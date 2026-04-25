@@ -1,0 +1,7 @@
+Producto
+
+{
+  "name":"sprite",
+  "price":1300,
+  "barcode":"345674874"
+}

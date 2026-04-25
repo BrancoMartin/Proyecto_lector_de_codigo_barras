@@ -1,0 +1,110 @@
+.option-panel {
+  background-color: #f0eeff;
+}
+
+.box-title {
+  background-color: #1a1a1a;
+  padding: 1em 0em;
+  border-radius: 1em;
+  margin: 2rem auto;
+
+  width: 100%;
+}
+
+.box-title .title {
+  margin: 0 0 1em 0;
+  font-size: 2rem;
+  font-weight: 800;
+  color: white;
+}
+
+.box-title .description {
+  margin: 0;
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.8);
+  line-height: 1.5;
+}
+
+.label-add-product {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #7b46ff;
+}
+
+.label-add-product input,
+.label-add-product textarea {
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: 10px;
+  border: 1px solid #ddd;
+  background: white;
+  font-size: 1rem;
+  box-sizing: border-box;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.label-add-product input:focus,
+.label-add-product textarea:focus {
+  border-color: #7b46ff;
+}
+
+.label-add-product textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+.form-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 0.3rem;
+  width: 100%;
+}
+
+.option-form {
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 32px;
+  background-color: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.option-form button[type="submit"] {
+  padding: 14px;
+  border-radius: 12px;
+  border: none;
+  background: linear-gradient(135deg, #7b46ff 0%, #b565ff 100%);
+  color: white;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    filter 0.2s ease,
+    transform 0.2s ease;
+}
+
+.option-form button[type="submit"]:hover {
+  filter: brightness(1.08);
+  transform: translateY(-2px);
+}
+
+.success-message {
+  color: #2e7d32;
+  font-weight: 600;
+  text-align: center;
+}
+.error-message {
+  color: #c62828;
+  font-weight: 600;
+  text-align: center;
+}

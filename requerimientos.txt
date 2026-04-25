@@ -1,0 +1,11 @@
+1) fijarme de corregir el bug de que cree atributos de color para la categoria marca
+
+1) hacer que el hablar con el chat sea opcional y que el boton de aumentar precios salga solo si hablo con el 
+chat diciendole por que categoria aumentan los precios
+
+2) hacer que pueda cambiar la configuracion de las categorias o que puedan cambiar estas mediante el mismo 
+chat de aumento de precio(esto hacerlo con le controller dinamico que coloque abajo)
+
+3) podria hacer un controller que en base al prompt de entrada detecte que controller se debe ejecutar y 
+ejecute ese controller automaticamente y si no detecta ninguna accion que hable normalmente con el usuario
+ como si fuera un accesor financiero que ayuda con las finanzas.
