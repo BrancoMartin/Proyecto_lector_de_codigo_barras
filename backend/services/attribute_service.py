@@ -126,22 +126,25 @@ JSON:
             print("ATRIBUTOS GENERADOS POR LA IA: ", attributes_data)
             
             for attr in attributes_data:
+                print(attr.get("attribute"))
                 # Buscar la categoría correspondiente
                 category = next((c for c in categories if c.category == attr.get("category_name")), None)
                 category_id = category.id if category else None
 
-                amount_products = len(self.product.get_products_by_name_attribute(attr["attribute"]))
+                for a in attr.get("attribute"):   
+                    print("nombre atributo :        ", a.get("attribute"))
+                    amount_products = len(self.product.get_products_by_name_attribute(a.get("attribute")))
 
-                print("AMOUNT PRODUCTS",amount_products)
+                    print("AMOUNT PRODUCTS",amount_products)
 
-                new_attribute = Attribute(
-                    attribute=attr["attribute"],
-                    category_id=category_id, 
-                    amount_products=amount_products + 1
-                )
+                    new_attribute = Attribute(
+                        attribute=a["attribute"],
+                        category_id=category_id, 
+                        amount_products=amount_products + 1
+                    )
 
                 
-                saved = self.attribute.create(new_attribute)
+                    saved = self.attribute.create(new_attribute)
 
             return new_attribute
 

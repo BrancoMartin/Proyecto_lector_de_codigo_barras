@@ -1,4 +1,4 @@
-1) fijarme de corregir el bug de que cree atributos de color para la categoria marca
+
 
 1) hacer que el hablar con el chat sea opcional y que el boton de aumentar precios salga solo si hablo con el 
 chat diciendole por que categoria aumentan los precios
