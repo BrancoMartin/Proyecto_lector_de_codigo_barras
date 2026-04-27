@@ -3,7 +3,7 @@
   display: flex;
   justify-content: center;
   padding: 16px 20px;
-  background: rgba(255, 255, 255, 0.95);
+  background: rgb(48, 9, 73);
   border-bottom: 1px solid rgba(123, 70, 255, 0.1);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
@@ -26,10 +26,9 @@
 
 .item-list a {
   display: inline-flex;
-
+  color: rgb(248, 248, 248);
   border-radius: 99px;
-  background: rgba(123, 70, 255, 0.12);
-  color: #5d4d7e;
+  background: rgba(123, 70, 255, 0.158);
   text-decoration: none;
   font-weight: 600;
   font-size: 0.95rem;

@@ -87,7 +87,9 @@ function AddProductOption() {
             />
           </label>
         </div>
-        <button type="submit">Guardar producto</button>
+        <button className="button" type="submit">
+          Guardar producto
+        </button>
         {message && <p className="success-message">{message}</p>}
         {error && <p className="error-message">{error}</p>}
       </form>

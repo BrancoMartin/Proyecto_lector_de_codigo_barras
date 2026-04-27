@@ -30,7 +30,9 @@ function ModalChat({ onClose }) {
         placeholder="ej: Suelen aumentarme por marca y por material"
         onChange={(e) => setPrompt(e.target.value)}
       />
-      <button type="submit">Enviar</button>
+      <button className="button" type="submit">
+        Enviar
+      </button>
     </form>
   );
 }

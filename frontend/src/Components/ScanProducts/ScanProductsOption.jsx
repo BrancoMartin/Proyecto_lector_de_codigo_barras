@@ -87,7 +87,11 @@ function ScanProductsOption() {
             onKeyDown={(e) => e.key === "Enter" && handleScan(e)} // aca tengo que poner un evento que me traiga a ese product y que me agregue al tocket el producto escaneado
           />
         </label>
-        <button type="submit" disabled={loading || !barcode.trim()}>
+        <button
+          className="button"
+          type="submit"
+          disabled={loading || !barcode.trim()}
+        >
           {loading ? "Creando venta..." : "Crear venta"}
         </button>
       </form>

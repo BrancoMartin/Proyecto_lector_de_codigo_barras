@@ -18,9 +18,6 @@ function Nav() {
         <li className="item-list">
           <a href="/sales-history">Historial de ventas</a>
         </li>
-        <li className="item-list">
-          <a href="/price-config">Configurar Aumentos</a>
-        </li>
       </ul>
     </nav>
   );
