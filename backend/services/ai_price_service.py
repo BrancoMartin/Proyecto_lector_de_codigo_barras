@@ -47,34 +47,31 @@ class AIPriceService:
         
 
         template = """
-Eres un extractor de datos. Tu ÚNICA tarea es leer el mensaje del usuario, identificar a qué categoría se refiere y devolver un JSON válido.
+Eres un extractor de datos JSON. Analizá el mensaje del usuario y devolvé ÚNICAMENTE un JSON.
 
-LISTA DE CATEGORÍAS VÁLIDAS (base de datos):
+ATRIBUTOS DISPONIBLES EN BASE DE DATOS (estos son los únicos valores válidos):
 {attribute}
 
-REGLAS ESTRICTAS:
-- Devolvé ÚNICAMENTE el JSON, sin texto previo, sin explicaciones, sin markdown, sin bloques de código.
-- "attribute" debe ser EXACTAMENTE una de las palabras de la LISTA DE CATEGORÍAS VÁLIDAS de arriba. No inventes palabras.
-- Si el usuario escribe una categoría con tilde, plural, mayúscula o parecida, igualmente buscá la más cercana en la lista.
-- Si no encontrás ninguna categoría relacionada en la lista, devolvé: {{"attribute": null, "percentage": null}}
-- "percentage" debe ser el número decimal del porcentaje.
-  Ejemplos: 40% → 0.40 | 15% → 0.15 | 100% → 1.00
+TAREA:
+1. Buscá en el mensaje una palabra que coincida con algún ATRIBUTO de la lista (ignorando tildes, mayúsculas o plurales).
+2. Extraé el porcentaje y convertilo a decimal (40% → 0.40).
 
-EJEMPLOS (asumiendo que la lista contiene: plastico, electronico, ropa, comida):
-Entrada: "aumentame un 40% los productos de plastico"
-Salida: {{"attribute": "plastico", "percentage": 0.40}}
+REGLA CRÍTICA:
+- El valor de "attribute" debe ser EXACTAMENTE una palabra de la lista de arriba.
+- Si el usuario menciona algo que NO está en la lista, devolvé null.
+- NO inventes, NO supongas, NO elijas el más parecido si no hay coincidencia clara.
 
-Entrada: "subí un 20% la categoría electrónica"
-Salida: {{"attribute": "electronico", "percentage": 0.20}}
+FORMATO DE SALIDA (sin markdown, sin texto extra):
+{{"attribute": "<atributo_exacto_o_null>", "percentage": <decimal_o_null>}}
 
-Entrada: "quiero aumentar ropa un 15 por ciento"
-Salida: {{"attribute": "ropa", "percentage": 0.15}}
+EJEMPLOS (asumiendo lista: lego, samsung, plastico, metal):
+Entrada: "aumentame 50% los productos de marca lego"  → {{"attribute": "lego", "percentage": 0.50}}
+Entrada: "subí 20% los de samsung"                   → {{"attribute": "samsung", "percentage": 0.20}}
+Entrada: "aumentá 40% los productos de plastico"     → {{"attribute": "plastico", "percentage": 0.40}}
+Entrada: "quiero subir juguetes un 10%"              → {{"attribute": null, "percentage": null}}
 
-Entrada: "aumentá un 10% los juguetes"
-Salida: {{"attribute": null, "percentage": null}}
-
-Historial de conversación: {conversation_history}
-Mensaje del usuario: {prompt}
+Historial: {conversation_history}
+Mensaje: {prompt}
 
 JSON:
 """
@@ -88,6 +85,7 @@ JSON:
 
         try:
             attribute = self.attribute.get_all()
+            print("ATRIBUTOS", attribute)
             result = chain.invoke({
                 "prompt": prompt,
                 "conversation_history": conversation_history,
@@ -95,7 +93,9 @@ JSON:
             })
             print("RESPONSE CALCULATE PRICE", result)
 
-            clean = result.strip().replace("```json", "").replace("```", "").strip()
+            content = result.content
+
+            clean = content.strip().replace("```json", "").replace("```", "").strip()
             data = json.loads(clean)
 
             attribute_name = data.get("attribute")

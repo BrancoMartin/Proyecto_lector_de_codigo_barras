@@ -1,18 +1,11 @@
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import "./start.css";
-import ModalChat from "../Components/ModalChat/ModalChat";
+import AgentChat from "../Components/AgentChat/AgentChat";
 
 function Start() {
-  const [showModal, setShowModal] = useState(false);
+  const [showAgent, setShowAgent] = useState(false);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    // Mostrar el modal solo la primera vez que se abre el componente
-    if (!localStorage.getItem("IncreaseConfigModalShown")) {
-      setShowModal(true);
-    }
-  }, []);
 
   return (
     <div className="start-page">
@@ -31,18 +24,24 @@ function Start() {
         <button onClick={() => navigate("/scan-products")}>
           Escanear Productos
         </button>
-        <button onClick={() => navigate("/price-config")}>
-          Configurar Aumentos
-        </button>
       </div>
-      {showModal && (
-        <ModalChat
-          onClose={() => {
-            setShowModal(false);
-            localStorage.setItem("IncreaseConfigModalShown", "true");
-          }}
-        />
-      )}
+
+      {/* Botón flotante del agente IA */}
+      <div className="agent-button-container">
+        <button
+          className="agent-button"
+          onClick={() => setShowAgent(!showAgent)}
+          title="¿Querés configurar el aumento de precios? Hablá con nuestro agente."
+        >
+          <span className="agent-icon">🤖</span>
+        </button>
+        <div className="agent-tooltip">
+          ¿Querés configurar el aumento de precios? Hablá con nuestro agente.
+        </div>
+      </div>
+
+      {/* Panel lateral del chat */}
+      {showAgent && <AgentChat onClose={() => setShowAgent(false)} />}
     </div>
   );
 }

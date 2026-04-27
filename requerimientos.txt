@@ -1,11 +1,19 @@
-1) hacer que se guarde correctamente ela cantidad ed productos que tiene esa categoria a la hora de crearla
 
-1) hacer que el hablar con el chat sea opcional y que el boton de aumentar precios salga solo si hablo con el 
-chat diciendole por que categoria aumentan los precios
+1) Que en la pagina principal haya solo los botones de agregar productos, historial ventas, 
+y escanear productos.
+Y que tenga tambien un simbolito de agente que al apretarlo se despliegue un aside con el chat para colocar 
+como aumentan los productos (por que categoria aumentan) y una vez creadas las categorias, que el usuario 
+pueda decirle al mismo chat que aumenten los precios de cualquier categoria.
+Y en caso de no haber especificado con que categoria aumentan los productos antes de que el sistema haga un 
+aumento que el chat le haga preguntas al usuario para que pueda entender de que manera aumentan los productos 
+y poder crear las categorias y luego si aumentar esa categoria.  
 
-2) hacer que pueda cambiar la configuracion de las categorias o que puedan cambiar estas mediante el mismo 
-chat de aumento de precio(esto hacerlo con le controller dinamico que coloque abajo)
 
-3) podria hacer un controller que en base al prompt de entrada detecte que controller se debe ejecutar y 
-ejecute ese controller automaticamente y si no detecta ninguna accion que hable normalmente con el usuario
- como si fuera un accesor financiero que ayuda con las finanzas.
+2) podria hacer un controller que tome todos los prompts que el usuario hace y en base al prompt de entrada 
+detecte que controller se debe ejecutar y ejecute ese controller automaticamente y si no detecta ninguna 
+accion que hable normalmente con el usuario como si fuera un accesor financiero que ayuda con las finanzas.
+Que este controller dinamico procese la salida de las respuestas de los otros controller, y responda con un
+mensaje indicando tanto si se pudo ejecutar correctamente la accion o si no se pudo.
+
+3) hacer que pueda cambiar la configuracion de las categorias o que puedan cambiar estas mediante el mismo 
+chat de aumento de precio(esto hacerlo con le controller dinamico que coloque abajo) agregar mas categorias o cambiarlas.

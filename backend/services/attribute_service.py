@@ -47,16 +47,18 @@ class AttributeService:
         
 
     def get_attributes(self):
-                try: 
-                    attributes = self.attribute.get_all()
+        try: 
+            attributes = self.attribute.get_all()
+            return {
+                "success": True,
+                "attributes": attributes
+            }
 
-                except Exception as e: 
-                    return {
-                        "error": str(e),
-                        "success": False
-                    }
-                
-                return attributes
+        except Exception as e: 
+            return {
+                "error": str(e),
+                "success": False
+            }
     
 
 
@@ -167,10 +169,123 @@ JSON:
 
     def get_attributes_by_product(self, product_id: int): 
         try: 
-            attributes = self.get_attributes_by_product(product_id)
+            attributes = self.attribute.get_attributes_by_product(product_id)
         except Exception as e: 
-            print(f"Error extracting attributes: {e}")
+            print(f"Error getting attributes: {e}")
              
-        return attributes    
+        return attributes
 
-    
+    def create_attribute_for_category(self, attribute_name: str, category_id: int) -> dict:
+        """
+        Crea un atributo para una categoría específica.
+        Usado cuando el usuario quiere agregar atributos al chat.
+        """
+        try:
+            # Verificar que la categoría existe
+            category = self.category.get_all()
+            cat_found = next((c for c in category if c.id == category_id), None)
+            
+            if not cat_found:
+                return {"success": False, "error": f"Categoría con ID {category_id} no existe"}
+            
+            # Verificar si el atributo ya existe
+            existing = self.attribute.get_by_name(attribute_name)
+            if existing and existing.category_id == category_id:
+                return {"success": False, "error": f"El atributo '{attribute_name}' ya existe en esta categoría"}
+            
+            # Crear el atributo
+            new_attribute = Attribute(
+                attribute=attribute_name,
+                category_id=category_id,
+                amount_products=0
+            )
+            created = self.attribute.create(new_attribute)
+            
+            return {
+                "success": True,
+                "attribute": {
+                    "id": created.id,
+                    "attribute": created.attribute,
+                    "category_id": created.category_id
+                }
+            }
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+
+    def create_attributes_from_prompt(self, user_message: str, conversation_history: list = None) -> dict:
+        """
+        Crea atributos basados en un prompt del usuario.
+        Ejemplo: "Quiero agregar los atributos Samsung, LG a la categoria marca"
+        """
+        import json
+        
+        if not self.llm:
+            return {"success": False, "error": "LLM no disponible"}
+        
+        if conversation_history is None:
+            conversation_history = []
+        
+        # Obtener categorías existentes
+        categories = self.category.get_all()
+        if not categories:
+            return {"success": False, "error": "No hay categorías disponibles"}
+        
+        categories_str = ", ".join([c.category for c in categories])
+        
+        template = """Eres un asistente que extrae información para crear atributos.
+        
+CATEGORÍAS DISPONIBLES: {categories}
+
+TAREA: El usuario quiere agregar atributos. Extrae:
+1. El nombre de la categoría
+2. La lista de atributos a agregar
+
+MENSAJE: "{user_message}"
+
+Responde SOLO con JSON sin explicaciones:
+{{"category": "nombre_categoria", "attributes": ["attr1", "attr2", "attr3"]}}
+
+JSON:"""
+        
+        prompt = PromptTemplate(
+            input_variables=["user_message", "categories"],
+            template=template
+        )
+        
+        chain = prompt | self.llm
+        
+        try:
+            response = chain.invoke({
+                "user_message": user_message,
+                "categories": categories_str
+            })
+            
+            content = response.content.strip()
+            clean = content.replace("```json", "").replace("```", "").strip()
+            data = json.loads(clean)
+            
+            category_name = data.get("category")
+            attributes_list = data.get("attributes", [])
+            
+            # Buscar la categoría
+            category = next((c for c in categories if c.category.lower() == category_name.lower()), None)
+            if not category:
+                return {"success": False, "error": f"Categoría '{category_name}' no encontrada"}
+            
+            # Crear atributos
+            created = []
+            for attr_name in attributes_list:
+                result = self.create_attribute_for_category(attr_name.lower(), category.id)
+                if result.get("success"):
+                    created.append(result.get("attribute"))
+            
+            return {
+                "success": True,
+                "category": category.category,
+                "attributes_created": created
+            }
+        
+        except Exception as e:
+            print(f"Error creating attributes from prompt: {e}")
+            return {"success": False, "error": str(e)}
+

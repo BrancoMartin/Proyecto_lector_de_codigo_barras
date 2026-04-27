@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles  # para servir archivos estáticos (css, js)
 from fastapi.responses import FileResponse   # para devolver archivos como respuesta
 from database import init_db     # función que crea las tablas
-from api.routes import controller_ai, controller_products, controller_sales  # las rutas
+from api.routes import controller_ai, controller_products, controller_sales, controller_agent  # las rutas
 import os  # para manejar rutas de archivos y carpetas
 
 def create_app() -> FastAPI:  # -> FastAPI indica que esta función devuelve una app FastAPI
@@ -24,6 +24,7 @@ def create_app() -> FastAPI:  # -> FastAPI indica que esta función devuelve una
     app.include_router(controller_products.router, prefix="/api/products")
     app.include_router(controller_sales.router, prefix="/api/sales")
     app.include_router(controller_ai.router, prefix="/api/ai")
+    app.include_router(controller_agent.router, prefix="/api/agent")  # Nuevo controller dinámico
 
     # Endpoint de salud que usa main.py para saber si el servidor está listo
     @app.get("/health")

@@ -53,14 +53,16 @@ class CategoryService:
     def get_categories(self):
         try: 
             categories = self.category.get_all()
+            return {
+                "success": True,
+                "categories": categories
+            }
 
         except Exception as e: 
             return {
                 "error": str(e),
                 "success": False
             }
-        
-        return categories
     
 
 

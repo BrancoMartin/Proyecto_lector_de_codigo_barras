@@ -30,3 +30,10 @@ class AttributeRepository:
             Attribute.attribute == name
         ).first()
         return attribute
+
+    def update(self, attribute: Attribute) -> Attribute:
+        """Updates an existing attribute in the database"""
+        self.db.add(attribute)
+        self.db.commit()
+        self.db.refresh(attribute)
+        return attribute
