@@ -45,7 +45,6 @@ class ProductService:
 
         attribute = self.attribute_service.create_attributes(product.name, product.description,product)
 
-        print("ATRIBUTO", attribute)
 
         response = self.repo.create(product)
 

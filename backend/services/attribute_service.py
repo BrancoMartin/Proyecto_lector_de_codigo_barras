@@ -97,6 +97,8 @@ Dado un producto y una lista de categorías de atributos, generá exactamente UN
 | Color     | Rojo       | Producto rojo       |
 | Talle     | 42         | Número de calzado   |
 
+
+La palabra que me devuelvas tiene que ser toda en minuscula y sin tildes.
 ## Formato de respuesta
 {{"attributes": [{{"attribute": "valor_especifico", "category_name": "nombre_categoria"}}]}}
 
@@ -124,29 +126,38 @@ JSON:
             attributes_data = data.get("attributes", [])
 
             print("ATRIBUTOS GENERADOS POR LA IA: ", attributes_data)
-            
-            for attr in attributes_data:
-                print(attr.get("attribute"))
+
+            for item in attributes_data:  
+                attribute_value = item['attribute']
+                category_name = item['category_name']
+
                 # Buscar la categoría correspondiente
-                category = next((c for c in categories if c.category == attr.get("category_name")), None)
+                category = next((c for c in categories if c.category == category_name), None) 
                 category_id = category.id if category else None
 
-                for a in attr.get("attribute"):   
-                    print("nombre atributo :        ", a.get("attribute"))
-                    amount_products = len(self.product.get_products_by_name_attribute(a.get("attribute")))
+                existing_attribute = self.attribute.get_by_name(attribute_value)
 
-                    print("AMOUNT PRODUCTS",amount_products)
-
+                if existing_attribute:
+                    print("ATTRIBUTE", existing_attribute)
+                    existing_attribute.amount_products += 1
+                    try:
+                        self.attribute.update(existing_attribute)
+                        product.attributes.append(existing_attribute)
+                    except Exception as e:
+                        return f'error al querer actualizar la cantidad de productos: {e}'  
+                else:
                     new_attribute = Attribute(
-                        attribute=a["attribute"],
-                        category_id=category_id, 
-                        amount_products=amount_products + 1
+                        attribute=attribute_value,  
+                        category_id=category_id,
+                        amount_products=1
                     )
-
-                
                     saved = self.attribute.create(new_attribute)
+                    product.attributes.append(saved)
 
-            return new_attribute
+                    if not saved:
+                        return f'error al querer crear un atributo: {e}' 
+
+            return attributes_data  
 
         except Exception as e:
             print(f"Error extracting attributes: {e}")

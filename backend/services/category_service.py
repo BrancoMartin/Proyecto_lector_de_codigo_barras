@@ -92,7 +92,7 @@ class CategoryService:
 
     Usuario: {user_message}
 
-    Respondé ÚNICAMENTE con un JSON válido, sin texto adicional, sin explicaciones, sin markdown, sin bloques de código y en español.
+    Respondé ÚNICAMENTE con un JSON válido, sin texto adicional, sin explicaciones, sin markdown, sin bloques de código, en español, sin acentos y en minuscula.
     El formato debe ser exactamente este:
     {{"categories": [{{"category": "nombre_categoria"}}, {{"category": "otra_categoria"}}]}}
 

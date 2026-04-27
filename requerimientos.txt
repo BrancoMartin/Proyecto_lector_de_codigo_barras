@@ -1,4 +1,4 @@
-
+1) hacer que se guarde correctamente ela cantidad ed productos que tiene esa categoria a la hora de crearla
 
 1) hacer que el hablar con el chat sea opcional y que el boton de aumentar precios salga solo si hablo con el 
 chat diciendole por que categoria aumentan los precios
