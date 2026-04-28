@@ -77,7 +77,7 @@ function ScanProductsOption() {
           </p>
         </div>
 
-        <label>
+        <label className="label-add-product">
           Código de barras
           <input
             type="text"

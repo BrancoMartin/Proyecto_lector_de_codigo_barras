@@ -47,7 +47,10 @@
   font-weight: 800;
   letter-spacing: 0.02em;
   box-shadow: 0 24px 60px rgba(123, 70, 255, 0.24);
-  transition: transform 0.3s ease, filter 0.3s ease, box-shadow 0.3s ease;
+  transition:
+    transform 0.3s ease,
+    filter 0.3s ease,
+    box-shadow 0.3s ease;
   position: relative;
   overflow: hidden;
 }
@@ -59,7 +62,12 @@
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.18), transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.18),
+    transparent
+  );
   transition: left 0.45s ease;
 }
 
@@ -80,6 +88,11 @@
 .start-actions button:focus-visible {
   outline: 3px solid rgba(123, 70, 255, 0.5);
   outline-offset: 4px;
+}
+
+.button-start {
+  font-size: 22px;
+  font-family: cursive;
 }
 
 .agent-button-container {
@@ -115,7 +128,11 @@
   position: absolute;
   width: 100%;
   height: 100%;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.2) 0%, transparent 70%);
+  background: radial-gradient(
+    circle,
+    rgba(255, 255, 255, 0.2) 0%,
+    transparent 70%
+  );
   opacity: 0;
   transition: opacity 0.3s ease;
 }

@@ -1,12 +1,10 @@
-
-# from langchain_ollama import OllamaLLM  
+from langchain_ollama import OllamaLLM  
 from langchain_core.prompts import PromptTemplate  
 from sqlalchemy.orm import Session  
 from repositories.category_repository import CategoryRepository
 from repositories.attribute_repository import AttributeRepository
 from repositories.product_repository import ProductRepository
 from models.attribute import Attribute
-from langchain_groq import ChatGroq
 from dotenv import load_dotenv
 import os
 load_dotenv()
@@ -22,22 +20,14 @@ class AttributeService:
         self.attribute = AttributeRepository(db)
         self.product = ProductRepository(db)
 
-         # Inicializamos Ollama con la nueva API de Langchain 1.x
+        # Inicializamos Ollama con la nueva API de Langchain 1.x
         try:
-            """
+        
             self.llm = OllamaLLM(
-                model="qwen2.5",  # EL LLM FINAL SERA QWEN2.5:0.5B POR QUE ES 100 GRATUITO, PERO PARA DESARROLLAR USARE Groq
-                base_url="http://localhost:11434",  # URL del servidor Ollama
-                # En Langchain 1.x ya no se usa callback_manager de la misma forma
+                model="qwen2.5",  
+                base_url="http://localhost:11434", 
             )
-            """
             
-
-            self.llm = ChatGroq(
-                model="llama-3.1-8b-instant",
-                api_key=os.environ.get("GROQ_API_KEY"),  
-                temperature=0,
-            )
             
         except Exception as e:
             # Si Ollama no está disponible, log y continuar sin IA

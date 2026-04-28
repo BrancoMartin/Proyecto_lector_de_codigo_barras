@@ -11,22 +11,20 @@ function Start() {
     <div className="start-page">
       <header className="start-header">
         <h1>Sistema de Administración</h1>
-        <p>Elige una acción para gestionar tu inventario y ventas</p>
       </header>
 
       <div className="start-actions">
         <button onClick={() => navigate("/add-product")}>
-          Agregar Producto
+          <p className="button-start">Agregar Producto</p>
         </button>
         <button onClick={() => navigate("/sales-history")}>
-          Historial de Ventas
+          <p className="button-start">Historial de Ventas</p>
         </button>
         <button onClick={() => navigate("/scan-products")}>
-          Escanear Productos
+          <p className="button-start">Escanear Productos</p>
         </button>
       </div>
 
-      
       <div className="agent-button-container">
         <button
           className="agent-button"
@@ -35,9 +33,7 @@ function Start() {
         >
           <span className="agent-icon">🤖</span>
         </button>
-        <div className="agent-tooltip">
-          ¿Querés configurar el aumento de precios? Hablá con nuestro agente.
-        </div>
+        <div className="agent-tooltip">¿Querés</div>
       </div>
 
       {/* Panel lateral del chat */}

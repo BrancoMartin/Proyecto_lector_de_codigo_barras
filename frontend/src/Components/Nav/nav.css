@@ -1,8 +1,7 @@
 ﻿.main-nav {
-  width: 100%;
   display: flex;
   justify-content: center;
-  padding: 1rem 1.25rem;
+  padding: 1rem;
   background: rgba(255, 255, 255, 0.82);
   backdrop-filter: blur(14px);
   box-shadow: 0 10px 32px rgba(89, 54, 154, 0.08);
@@ -10,6 +9,7 @@
   top: 0;
   z-index: 60;
   border-bottom: 1px solid rgba(123, 70, 255, 0.12);
+  margin: 1rem;
 }
 
 .list-nav {
@@ -33,7 +33,10 @@
   color: #2d1b4e;
   font-weight: 600;
   font-size: 0.95rem;
-  transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease,
+    color 0.2s ease;
 }
 
 .item-list a:hover {

@@ -1,12 +1,11 @@
 
-# from langchain_ollama import OllamaLLM  
+from langchain_ollama import OllamaLLM  
 from langchain_core.prompts import PromptTemplate  
 from sqlalchemy.orm import Session  
 from repositories.category_repository import CategoryRepository
 from repositories.attribute_repository import AttributeRepository
 from repositories.product_repository import ProductRepository
 from models.category import Category
-from langchain_groq import ChatGroq
 from dotenv import load_dotenv
 import os
 load_dotenv()
@@ -24,10 +23,9 @@ class CategoryService:
          # Inicializamos Ollama con la nueva API de Langchain 1.x
         try:
              
-             self.llm = ChatGroq(
-                model="llama-3.1-8b-instant",
-                api_key=os.environ.get("GROQ_API_KEY"),  
-                temperature=0,
+            self.llm = OllamaLLM(
+                model="qwen2.5",  
+                base_url="http://localhost:11434", 
             )
              
         except Exception as e:

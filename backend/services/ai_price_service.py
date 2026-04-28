@@ -1,5 +1,5 @@
 
-# from langchain_ollama import OllamaLLM  
+from langchain_ollama import OllamaLLM  
 from langchain_core.prompts import PromptTemplate  
 from sqlalchemy.orm import Session  
 
@@ -9,7 +9,6 @@ from repositories.product_repository import ProductRepository
 from models.product import Product
 import json  
 import re  
-from langchain_groq import ChatGroq
 from dotenv import load_dotenv
 
 import os
@@ -27,10 +26,9 @@ class AIPriceService:
         
         
         try:
-            self.llm = ChatGroq(
-                model="llama-3.1-8b-instant",
-                api_key=os.environ.get("GROQ_API_KEY"),  
-                temperature=0,
+            self.llm = OllamaLLM(
+                model="qwen2.5",  
+                base_url="http://localhost:11434", 
             )
         except Exception as e:
             print(f"Warning: Could not connect to Ollama: {e}")
