@@ -7,14 +7,14 @@ function AgentChat({ onClose }) {
     {
       id: 1,
       type: "assistant",
-      text: "¡Hola! Soy tu asistente de precios. Puedo ayudarte a:\n\n• Crear categorías de aumento de precios\n• Agregar o modificar atributos\n• Aumentar precios por categoría\n• Listar categorías y atributos\n\n¿En qué puedo ayudarte?",
+      text: "Para poder aumentar los precios primero necesito que me digas como suelen aumentar tus productos. ejemplo: \n a) Todos individualmente \n b) Por marca, material, proovedor etc. \n c) Todos juntos",
     },
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef(null);
   const [conversationHistory, setConversationHistory] = useState([]);
-  const [categories, setCategories] = useState();
+  const [categories, setCategories] = useState([]);
 
   // Auto-scroll al final de los mensajes
   const scrollToBottom = () => {
@@ -22,11 +22,21 @@ function AgentChat({ onClose }) {
   };
 
   useEffect(() => {
-    async () => {
+    const fetchCategories = async () => {
       const categories = await axios.get("/api/category");
-      setCategories(categories);
+      if (categories.length > 0) {
+        setCategories(categories);
+        setMessages([
+          {
+            id: 1,
+            type: "assistant",
+            text: `Decime, ejemplo: "aumentáme los precios de la categoria ${categories[0]} un 15%"`,
+          },
+        ]);
+      }
     };
-  }, []);
+    fetchCategories();
+  }, [categories]);
 
   useEffect(() => {
     scrollToBottom();

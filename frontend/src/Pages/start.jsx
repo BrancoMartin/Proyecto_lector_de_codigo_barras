@@ -33,7 +33,9 @@ function Start() {
         >
           <span className="agent-icon">🤖</span>
         </button>
-        <div className="agent-tooltip">¿Querés</div>
+        <div className="agent-tooltip">
+          AJUSTA LOS PRECIOS DE TUS PRODUCTOS. Hablando con este agente ia
+        </div>
       </div>
 
       {/* Panel lateral del chat */}
