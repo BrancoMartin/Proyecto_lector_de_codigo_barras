@@ -138,3 +138,16 @@ class CategoryService:
                 "success": False
             }
         
+
+    def create_category_admin(self, category: str):
+        cate = Category(category)
+
+        result = self.category.create(cate)
+
+        if not result: 
+            Exception("Category could not be created")
+        
+        return result
+    
+    def update(self, id: int):
+        

@@ -14,11 +14,19 @@ function AgentChat({ onClose }) {
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef(null);
   const [conversationHistory, setConversationHistory] = useState([]);
+  const [categories, setCategories] = useState();
 
   // Auto-scroll al final de los mensajes
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
+
+  useEffect(() => {
+    async () => {
+      const categories = await axios.get("/api/category");
+      setCategories(categories);
+    };
+  }, []);
 
   useEffect(() => {
     scrollToBottom();

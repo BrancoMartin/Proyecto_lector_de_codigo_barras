@@ -55,15 +55,6 @@ def calculate_final_price(
     
     return result
 
-@router.get("categories")
-def get_categories(
-    service: CategoryService = Depends(get_category_service)
-):
-    result = service.get_categories()
-    if not result.get("success"):
-        raise HTTPException(status_code=500, detail=result.get("error"))
-    
-    return result
 
 @router.get("attributes")
 def get_attributes(

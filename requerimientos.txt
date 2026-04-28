@@ -1,4 +1,5 @@
-1) cambiar las palabras de la interfaz para indicarle correctamente al usuario de como debe aumentar los precios con el agente de indicando
+1) cambiar las palabras de la interfaz para indicarle correctamente al usuario de como debe aumentar los precios 
+con el agente de indicando
 
 2) configurar el agente para que funcione correctamente cuando el usuario recibe consejos sobre cosas financieras.
 
