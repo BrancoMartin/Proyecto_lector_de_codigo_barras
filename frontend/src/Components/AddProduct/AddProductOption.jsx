@@ -2,6 +2,7 @@ import { useState } from "react";
 import axios from "axios";
 import Nav from "../Nav/nav";
 import "./AddProductOption.css";
+import addProductValidation from "./Validation.jsx";
 
 function AddProductOption() {
   const [barcode, setBarcode] = useState("");
@@ -10,30 +11,46 @@ function AddProductOption() {
   const [description, setDescription] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [errors, setErrors] = useState("");
 
   const handleSubmit = async (event) => {
     event.preventDefault();
 
     console.log("Datos a enviar:", { barcode, name, price, description });
 
+    const form = {
+      barcode: barcode,
+      name: name,
+      price: price,
+      description: description,
+    };
+
+    console.log("FORMULARIO POR ENVIARSE A LAS VALIDACIONES");
+
+    const errors = addProductValidation({ form });
+
+    setErrors(errors);
+
     setMessage("");
     setError("");
 
-    try {
-      const response = await axios.post("/api/products/", {
-        barcode,
-        name,
-        price,
-        description,
-      });
-      console.log("RESPUESTA", response.data);
-      setMessage(`Producto creado: ${response.data.name}`);
-      setBarcode("");
-      setName("");
-      setPrice("");
-      setDescription("");
-    } catch (err) {
-      setError(err.response?.data?.detail || "No se pudo crear el producto");
+    if (!errors) {
+      try {
+        const response = await axios.post("/api/products/", {
+          barcode,
+          name,
+          price,
+          description,
+        });
+        console.log("RESPUESTA", response.data);
+        setMessage(`Producto creado: ${response.data.name}`);
+        setBarcode("");
+        setName("");
+        setPrice("");
+        setDescription("");
+      } catch (err) {
+        setError(err.response?.data?.detail || "No se pudo crear el producto");
+      }
     }
   };
 
@@ -50,42 +67,58 @@ function AddProductOption() {
           </p>
         </div>
         <div className="form-fields">
-          <label className="label-add-product">
-            Código de barras
-            <input
-              type="text"
-              value={barcode}
-              onChange={(e) => setBarcode(e.target.value)}
-              placeholder="Código de barras"
-            />
-          </label>
-          <label className="label-add-product">
-            Nombre
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Nombre del producto"
-            />
-          </label>
-          <label className="label-add-product">
-            Precio
-            <input
-              type="number"
-              step="0.01"
-              value={price}
-              onChange={(e) => setPrice(e.target.value)}
-              placeholder="Precio"
-            />
-          </label>
-          <label className="label-add-product">
-            Descripción
-            <input
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Descripción opcional"
-            />
-          </label>
+          <div className="container-label">
+            <label className="label-add-product">
+              Código de barras
+              <input
+                type="text"
+                value={barcode}
+                onChange={(e) => setBarcode(e.target.value)}
+                placeholder="Código de barras"
+              />
+            </label>
+            {errors.barcode && <p className="error">{errors.barcode}</p>}
+          </div>
+
+          <div className="container-label">
+            <label className="label-add-product">
+              Nombre
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Nombre del producto"
+              />
+            </label>
+            {errors.name && <p className="error">{errors.name}</p>}
+          </div>
+
+          <div className="container-label">
+            <label className="label-add-product">
+              Precio
+              <input
+                type="number"
+                step="0.01"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+                placeholder="Precio"
+              />
+            </label>
+            {errors.price && <p className="error">{errors.price}</p>}
+          </div>
+          <div className="container-label">
+            <label className="label-add-product">
+              Descripción
+              <input
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Descripción opcional"
+              />
+            </label>
+            {errors.description && (
+              <p className="error">{errors.description}</p>
+            )}
+          </div>
         </div>
         <button className="button" type="submit">
           Guardar producto

@@ -26,7 +26,7 @@ function Start() {
         </button>
       </div>
 
-      {/* Botón flotante del agente IA */}
+      
       <div className="agent-button-container">
         <button
           className="agent-button"

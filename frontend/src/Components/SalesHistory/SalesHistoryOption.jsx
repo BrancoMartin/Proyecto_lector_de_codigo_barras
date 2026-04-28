@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import axios from "axios";
 import Nav from "../Nav/nav";
 import "./SalesHistoryOption.css";
@@ -40,17 +40,17 @@ function SalesHistoryOption() {
       ) : history.length === 0 ? (
         <p>No hay ventas registradas aún.</p>
       ) : (
-        <table className="history-table">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Fecha</th>
-              <th>Total</th>
-              <th>Items</th>
-              <th>Estado</th>
-            </tr>
-          </thead>
-          {
+        <div className="history-table-wrapper">
+          <table className="history-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Fecha</th>
+                <th>Total</th>
+                <th>Items</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
             <tbody>
               {history?.map((sale) => (
                 <tr key={sale.id}>
@@ -62,8 +62,8 @@ function SalesHistoryOption() {
                 </tr>
               ))}
             </tbody>
-          }
-        </table>
+          </table>
+        </div>
       )}
     </section>
   );
