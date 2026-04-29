@@ -35,6 +35,18 @@ class AttributeService:
             print("El sistema funcionará sin capacidades de IA hasta que Ollama esté disponible")
             self.llm = None
         
+    def get_by_id(self , id): 
+        try: 
+            result = self.attribute.get_by_id(id)
+            return {
+                "success": True,
+                "attribute": result
+            }
+        except Exception as e: 
+            return {
+                "error": str(e),
+                "success": False
+            }
 
     def get_attributes(self):
         try: 
@@ -279,3 +291,30 @@ JSON:"""
             print(f"Error creating attributes from prompt: {e}")
             return {"success": False, "error": str(e)}
 
+
+    def update(self, id): 
+        try: 
+            result = self.attribute.update(id)
+            return {
+                "success": True, 
+                "error": result
+            }
+
+        except Exception as e: 
+            return {
+                "success": False, "error": str(e)
+            }
+        
+
+    def delete(self, id): 
+        try: 
+            result = self.attribute.update(id)
+            return {
+                "success": True, 
+                "error": result
+            }
+
+        except Exception as e: 
+            return {
+                "success": False, "error": str(e)
+            }

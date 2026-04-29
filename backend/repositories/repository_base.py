@@ -39,7 +39,7 @@ class RepositoryBase(Generic[T]):
             self.session.rollback()
             raise e
 
-    def add(self, entity: T) -> T:
+    def create(self, entity: T) -> T:
 
         try:
             self.session.add(entity)

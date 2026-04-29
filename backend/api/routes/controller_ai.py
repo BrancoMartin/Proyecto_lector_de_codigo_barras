@@ -56,24 +56,4 @@ def calculate_final_price(
     return result
 
 
-@router.get("attributes")
-def get_attributes(
-    service: AttributeService = Depends(get_attribute_service)
-): 
-    result = service.get_attributes()
-    if not result.get("success"):
-        raise HTTPException(status_code=500, detail=result.get("error"))
-    
-    return result
-
-@router.get("attributes/{id_product}")
-def get_attributes_by_product(
-    product_id: int,
-    service: AttributeService = Depends(get_attribute_service)
-): 
-    result = service.get_attributes_by_product(product_id)
-    if not result.get("success"):
-        raise HTTPException(status_code=500, detail=result.get("error"))
-    
-    return result
     
