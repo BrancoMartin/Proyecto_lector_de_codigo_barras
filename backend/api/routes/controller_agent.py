@@ -52,7 +52,7 @@ class AgentResponse(BaseModel):
 def get_llm():
     """Obtiene la instancia del LLM"""
     return OllamaLLM(
-            model="qwen2.5:0.5b",  # versión tiny, mucho más rápida
+            model="qwen2.5:0.5b",  
             base_url="http://localhost:11434",
         )
 

@@ -9,6 +9,8 @@
 
 COSAS A MEJORAR. 
 
+!) seguir haciendo anotaciones en el archivo de langchain de models files fijandome en lo que me mando chatgpt
+
 1) utilizar el Model-File para crear varios agentes y darles contexto de lo que quiero que hagan y 
 usar uno distinto para cada caso. (asi funciona todo correctamente)
 
