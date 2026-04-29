@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from database import get_db
-from langchain_groq import ChatGroq
+from langchain_ollama import OllamaLLM  
 from langchain_core.prompts import PromptTemplate
 from services.category_service import CategoryService
 from services.attribute_service import AttributeService
@@ -51,10 +51,12 @@ class AgentResponse(BaseModel):
 
 def get_llm():
     """Obtiene la instancia del LLM"""
-    return ChatGroq(
-        model="llama-3.1-8b-instant",
-        api_key=os.environ.get("GROQ_API_KEY"),
-    )
+    return OllamaLLM(
+            model="qwen2.5:0.5b",  # versión tiny, mucho más rápida
+            base_url="http://localhost:11434",
+        )
+
+
 
 
 def detect_intent(message: str, conversation_history: list = None, llm=None) -> dict:
@@ -72,35 +74,27 @@ def detect_intent(message: str, conversation_history: list = None, llm=None) -> 
         for msg in conversation_history[-4:]  # Últimos 4 mensajes para contexto
     ])
     
-    template = """Eres un clasificador de intenciones. Devuelve ÚNICAMENTE un JSON.
+    template = """Clasificador de intenciones. Devuelve SOLO JSON, sin texto extra.
 
-INTENCIONES VÁLIDAS:
-- crear_categoria: Crear nueva categoría (ej: "crear categoria material con plastico, metal")
-- agregar_atributo: Agregar atributos a categoría existente (ej: "agregar madera a material")
-- modificar_categoria: Cambiar nombres de categorías o atributos
-- aumentar_precios: Aumentar precios (ej: "aumenta 20% los precios de samsung")
-- listar_categorias: Ver categorías actuales (ej: "que categorias hay")
-- crear_productos: Crear un producto con nombre y precio (ej: "creame una pelota a $500") O cuando el mensaje es solo una secuencia de números (ej: "7790895000109")
-- consulta_general: Pregunta general sobre finanzas o negocios
-- informacion_incompleta: Falta información para ejecutar una acción
-
-CONTEXTO: {context}
 MENSAJE: "{user_message}"
 
-REGLAS:
-1. Acción concreta → devolvé esa intención.
-2. Solo números → siempre "crear_productos".
-3. Pregunta general → "consulta_general".
-4. SOLO JSON, sin markdown.
+REGLAS (en orden de prioridad):
+1. Solo numeros → "crear_productos"
+2. Menciona porcentaje o monto a subir → "aumentar_precios"  
+3. Menciona marca, material, tamaño, tipo u otro criterio de diferenciacion SIN numeros → "crear_categoria"
+4. Menciona agregar valor a categoria ya existente → "agregar_atributo"
+5. Pide ver o listar categorias → "listar_categorias"
+6. Crear producto con nombre y precio → "crear_productos"
+7. Pregunta general → "consulta_general"
 
-EJEMPLOS: 
-- " los productos me suelen aumentar dependiendo de la marca y el material". accion: crear_categoria() (con valores marca y material)
-- " creame el producto Pelota con el precio $80000". accion: crear_productos.
+EJEMPLOS:
+- "mis productos varian por marca y material" → crear_categoria
+- "aumenta 20% los samsung" → aumentar_precios
+- "agrega plastico a material" → agregar_atributo
+- "que categorias tengo" → listar_categorias
 
 FORMATO:
-{{"intent": "nombre_intención", "confidence": 0.95, "reasoning": "breve explicación"}}
-
-JSON:"""
+{{"intent": "nombre", "confidence": 0.95, "reasoning": "explicacion"}}"""
     
     prompt = PromptTemplate(
         input_variables=["user_message", "context"],
@@ -115,7 +109,7 @@ JSON:"""
             "context": context if context else "Conversación nueva"
         })
         
-        content = response.content.strip()
+        content = response.strip()
         # Limpiar markdown y códigos si están presentes
         clean = content.replace("```json", "").replace("```", "").strip()
         data = json.loads(clean)
@@ -325,7 +319,7 @@ def agent_chat(
 
                     print("RESPUESTA DE LA IA EN EL CREATE PRODUCT", response)
 
-                    content = response.content.strip().replace("```json", "").replace("```", "").strip()
+                    content = response.strip().replace("```json", "").replace("```", "").strip()
                     product_data = json.loads(content)
                     
                     save_pending_product("default", product_data)
@@ -393,7 +387,7 @@ Sin markdown, texto plano, máximo 3-4 líneas."""
     
     try:
         response = chain.invoke({"user_message": user_message})
-        return response.content
+        return response
     except Exception as e:
         return f"Necesito más información. ¿Qué categoría o atributo quieres modificar?"
 
@@ -435,6 +429,6 @@ Sin markdown, texto plano."""
             "user_message": user_message,
             "context": context if context else "Conversación nueva"
         })
-        return response.content
+        return response
     except Exception as e:
         return "No puedo procesar esa pregunta en este momento. Intenta nuevamente."

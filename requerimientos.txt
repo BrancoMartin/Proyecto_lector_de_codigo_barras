@@ -9,14 +9,17 @@
 
 COSAS A MEJORAR. 
 
-1) no me crea los attributos si no hay categorias. ver si crear las categorias 
+1) utilizar el Model-File para crear varios agentes y darles contexto de lo que quiero que hagan y 
+usar uno distinto para cada caso. (asi funciona todo correctamente)
+
+2) no me crea los attributos si no hay categorias. ver si crear las categorias 
 en base a los atributos puede ser una opcion o cualquier otro tipo de cosa
 
 
-2) voy a tener que entrenar mucho al agente para que haga lo que yo quiero y ver de que manera puede ir mas rapido
+3) voy a tener que entrenar mucho al agente para que haga lo que yo quiero y ver de que manera puede ir mas rapido
 
 
-3) ver si puedo hacer un model de la bd para darle a la ia una memoria y que el usuario pueda ir diciendole 
+4) ver si puedo hacer un model de la bd para darle a la ia una memoria y que el usuario pueda ir diciendole 
 de que manera quiere que funcione.
 
 pueden ser varios modelos y que la ia se fije el contexto del mesaje y que guarde lo que crea acorde 

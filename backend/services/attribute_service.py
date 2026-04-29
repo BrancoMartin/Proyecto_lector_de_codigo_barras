@@ -24,8 +24,8 @@ class AttributeService:
         try:
         
             self.llm = OllamaLLM(
-                model="qwen2.5",  
-                base_url="http://localhost:11434", 
+                model="qwen2.5:0.5b",  # versión tiny, mucho más rápida
+                base_url="http://localhost:11434",
             )
             
             

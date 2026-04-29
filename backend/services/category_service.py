@@ -24,8 +24,8 @@ class CategoryService:
         try:
              
             self.llm = OllamaLLM(
-                model="qwen2.5",  
-                base_url="http://localhost:11434", 
+                model="qwen2.5:0.5b",  # versión tiny, mucho más rápida
+                base_url="http://localhost:11434",
             )
              
         except Exception as e:
@@ -84,20 +84,13 @@ class CategoryService:
             for msg in conversation_history
         ])
 
-        template = """
-    Eres un asistente que ayuda a crear categorias de aumento de precio.
-    El usuario te va a describir cómo aumentan sus precios y vos tenés que devolver ÚNICAMENTE un JSON con las categorías a crear.
+        template = """Tarea: extraer categorias de aumento de precio del mensaje del usuario y devolver SOLO JSON.
 
-    {context}
+{context}
+Usuario: {user_message}
 
-    Usuario: {user_message}
-
-    Respondé ÚNICAMENTE con un JSON válido, sin texto adicional, sin explicaciones, sin markdown, sin bloques de código, en español, sin acentos y en minuscula.
-    El formato debe ser exactamente este:
-    {{"categories": [{{"category": "nombre_categoria"}}, {{"category": "otra_categoria"}}]}}
-
-    JSON:
-    """
+Responde SOLO con JSON valido, sin texto extra, en español, sin acentos, en minuscula:
+{{"categories": [{{"category": "nombre"}}]}}"""
 
         prompt = PromptTemplate(
             input_variables=["context", "user_message"],
@@ -114,15 +107,18 @@ class CategoryService:
             })
             print("RESPONSE", response)
 
-            content = response.content
+            content = response
 
             clean = content.strip().replace("```json", "").replace("```", "").strip()
             data = json.loads(clean)
             categories = data.get("categories", [])
 
+            print("CATEGORIAS ", categories)
+
             result = []
             for cat in categories:
                 nueva_categoria = Category(category=cat["category"])
+                print("NUEVA CATEGORIA ", nueva_categoria)
                 created = self.category.create(nueva_categoria)
                 result.append({"id": created.id, "category": created.category})
 
