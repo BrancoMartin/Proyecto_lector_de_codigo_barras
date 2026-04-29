@@ -13,3 +13,10 @@ COSAS A MEJORAR.
 en base a los atributos puede ser una opcion o cualquier otro tipo de cosa
 
 
+2) voy a tener que entrenar mucho al agente para que haga lo que yo quiero y ver de que manera puede ir mas rapido
+
+
+3) ver si puedo hacer un model de la bd para darle a la ia una memoria y que el usuario pueda ir diciendole 
+de que manera quiere que funcione.
+
+pueden ser varios modelos y que la ia se fije el contexto del mesaje y que guarde lo que crea acorde 
