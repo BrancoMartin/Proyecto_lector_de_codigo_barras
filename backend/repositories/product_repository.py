@@ -2,12 +2,14 @@ from sqlalchemy.orm import Session
 from models.product import Product
 from models.category import Category
 from models.attribute import Attribute
+from repositories.repository_base import RepositoryBase
 
 
-class ProductRepository:
+class ProductRepository(RepositoryBase[Product]):
     """Repository for product database operations"""
     
     def __init__(self, db: Session):
+        super().__init__(db, Product)
         self.db = db
 
     

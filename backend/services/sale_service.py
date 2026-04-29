@@ -9,6 +9,7 @@ class SaleService:
 
     def __init__(self, db: Session):
         self.repo = SaleRepository(db)
+        
 
     def get_history(self):
         sales = self.repo.get_all()

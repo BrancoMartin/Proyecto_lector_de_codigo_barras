@@ -4,12 +4,14 @@ from models.sale import Sale
 from models.sale_item import SaleItem
 from models.product import Product
 from datetime import datetime
+from repositories.repository_base import RepositoryBase
 
 
-class SaleRepository:
+class SaleRepository(RepositoryBase[Sale]):
     """Repository for sale database operations"""
     
     def __init__(self, db: Session):
+        super().__init__(db, Sale)
         self.db = db
     
     def get_pending_sale(self) -> Sale:

@@ -67,13 +67,19 @@ class AttributeService:
     def create_attributes(self, product_name: str, product_description: str, product: object) -> list:
         import json
 
+        print("ENTRANDO A CREAR UN ATRIBUTE")
+
         categories = self.category.get_all()
+
+        print("CATEGORIAS ", categories)
 
         if not self.llm or not categories:
             return []
 
         # Convertir categorías a string legible para el prompt
         categories_str = ", ".join([c.category for c in categories])
+
+        print("CATEGORIES", categories_str)
 
         template = """
 Eres un experto en catalogación de productos para e-commerce.
@@ -115,7 +121,11 @@ JSON:
             template=template
         )
 
+        print("PROMPT", prompt)
+
         chain = prompt | self.llm
+
+        print("CHAIN", chain)
 
         try:
             result = chain.invoke({

@@ -1,4 +1,15 @@
+1) colocar que el agente este flotando por toda la app y no solo en la pagina principal
 
-1) configurar el agente para que funcione correctamente cuando el usuario recibe consejos sobre cosas financieras.
+2) configurar el agente para que funcione correctamente cuando el usuario recibe consejos sobre cosas financieras.
 
-2) ver de que manera lo puedo exportar e instalar en otra compu a todo el sistema. 
+3) ver de que manera lo puedo exportar e instalar en otra compu a todo el sistema. 
+
+
+
+
+COSAS A MEJORAR. 
+
+1) no me crea los attributos si no hay categorias. ver si crear las categorias 
+en base a los atributos puede ser una opcion o cualquier otro tipo de cosa
+
+

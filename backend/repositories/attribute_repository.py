@@ -1,10 +1,11 @@
 from sqlalchemy.orm import Session
 from models.attribute import Attribute
+from repositories.repository_base import RepositoryBase
 
 
-
-class AttributeRepository: 
+class AttributeRepository(RepositoryBase[Attribute]): 
     def __init__(self, db: Session):
+        super().__init__(db, Attribute)
         self.db = db
     
     def get_attributes_by_product(self, product_id): 

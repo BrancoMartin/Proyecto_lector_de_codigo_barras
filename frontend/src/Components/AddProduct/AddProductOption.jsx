@@ -34,7 +34,12 @@ function AddProductOption() {
     setMessage("");
     setError("");
 
-    if (!errors) {
+    console.log("ERRORES EN EL HANDLE SUBMIT", errors);
+
+    console.log("LONGITUD DE LOS ERRORES", errors.length);
+
+    if (errors.length === undefined) {
+      console.log("ENTRANDO A MANDAR LOS PRODUCTOS");
       try {
         const response = await axios.post("/api/products/", {
           barcode,

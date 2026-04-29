@@ -93,6 +93,10 @@ REGLAS:
 3. Pregunta general → "consulta_general".
 4. SOLO JSON, sin markdown.
 
+EJEMPLOS: 
+- " los productos me suelen aumentar dependiendo de la marca y el material". accion: crear_categoria() (con valores marca y material)
+- " creame el producto Pelota con el precio $80000". accion: crear_productos.
+
 FORMATO:
 {{"intent": "nombre_intención", "confidence": 0.95, "reasoning": "breve explicación"}}
 
