@@ -150,4 +150,14 @@ class CategoryService:
         return result
     
     def update(self, id: int):
-        
+        try: 
+            response = self.category.update(id)
+            return {
+                "success": True, 
+                "message": "Category updated successfully"
+            }
+        except Exception as e: 
+            return {
+                "success": False, 
+                "error": str(e)
+            }

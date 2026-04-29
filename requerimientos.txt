@@ -1,6 +1,4 @@
-1) cambiar las palabras de la interfaz para indicarle correctamente al usuario de como debe aumentar los precios 
-con el agente de indicando
 
-2) configurar el agente para que funcione correctamente cuando el usuario recibe consejos sobre cosas financieras.
+1) configurar el agente para que funcione correctamente cuando el usuario recibe consejos sobre cosas financieras.
 
-3) ver de que manera lo puedo exportar e instalar en otra compu a todo el sistema. 
+2) ver de que manera lo puedo exportar e instalar en otra compu a todo el sistema. 
