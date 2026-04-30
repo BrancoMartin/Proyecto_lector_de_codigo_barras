@@ -74,27 +74,11 @@ def detect_intent(message: str, conversation_history: list = None, llm=None) -> 
         for msg in conversation_history[-4:]  # Últimos 4 mensajes para contexto
     ])
     
-    template = """Clasificador de intenciones. Devuelve SOLO JSON, sin texto extra.
+    template = """MENSAJE: "{user_message}"
 
-MENSAJE: "{user_message}"
+INTENCIONES: crear_categoria, agregar_atributo, aumentar_precios, crear_productos, consulta_general
 
-REGLAS (en orden de prioridad):
-1. Solo numeros → "crear_productos"
-2. Menciona porcentaje o monto a subir → "aumentar_precios"  
-3. Menciona marca, material, tamaño, tipo u otro criterio de diferenciacion SIN numeros → "crear_categoria"
-4. Menciona agregar valor a categoria ya existente → "agregar_atributo"
-5. Pide ver o listar categorias → "listar_categorias"
-6. Crear producto con nombre y precio → "crear_productos"
-7. Pregunta general → "consulta_general"
-
-EJEMPLOS:
-- "mis productos varian por marca y material" → crear_categoria
-- "aumenta 20% los samsung" → aumentar_precios
-- "agrega plastico a material" → agregar_atributo
-- "que categorias tengo" → listar_categorias
-
-FORMATO:
-{{"intent": "nombre", "confidence": 0.95, "reasoning": "explicacion"}}"""
+JSON:"""
     
     prompt = PromptTemplate(
         input_variables=["user_message", "context"],

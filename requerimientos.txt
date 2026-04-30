@@ -5,11 +5,35 @@
 3) ver de que manera lo puedo exportar e instalar en otra compu a todo el sistema. 
 
 
+#####################################################################################
+ESTO APARECERA SOLO CUANDO SE ELIJA LA OPCION DE AUMENTAR PRECIOS.
+ (que debe estar en alguna esquina de la app)
+
+FLUJO DE APP (IA)
+ 
+
+ESTO COLOCARLO AL PRINCIPIO Y SI LLEGA A ELEGIR LA A O LA B QUE EL MODELO DE IA FUNCIONE 
+UNICAMENTE PARA CONSULTAS Y PARA CREAR PRODUCTOS. 
+(ESTO SE COLOCA COMO UN MULTIPLE CHOICE)
+
+1) Colocar que el modelo le pregunte al usuario como aumentaran los productos: 
+a) todos individualmente. 
+b) por categorias, (marca, proovedor etc)
+c) todos juntos.  
+
+Si llega a elegir la b que el modelo le pregunte cual/es es/son la/s categoria/s 
+que utilizan este aumento y que ahi funcione la ia de seleccion de funciones. 
+
+#######################################################################################
 
 
 COSAS A MEJORAR. 
 
-!) seguir haciendo anotaciones en el archivo de langchain de models files fijandome en lo que me mando chatgpt
+!) ver si existe la funcionalidad de aumentar precios por productos especificos y si no existe crearla
+
+!!)  crear funcionalidad de aumentar todos los productos. 
+
+
 
 1) utilizar el Model-File para crear varios agentes y darles contexto de lo que quiero que hagan y 
 usar uno distinto para cada caso. (asi funciona todo correctamente)
