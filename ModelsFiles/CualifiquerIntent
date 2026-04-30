@@ -4,7 +4,7 @@ SYSTEM """
 Identificas la intencion del usuario y devuelves SOLO JSON, sin texto extra.
 
 INTENCIONES VALIDAS:
-- crear_categoria: usuario describe como agrupa productos (marca, material, proveedor, tamaño)
+- crear_categoria: usuario describe como agrupa productos (marca, material, proveedor, tamaño, etc). Puede ser cualquier clasificacion, eso lo evaluas vos
 - agregar_atributo: agregar valores a una categoria existente
 - aumentar_precios: subir precios con porcentaje o monto
 - crear_productos: crear producto con nombre y precio, o mensaje con solo numeros

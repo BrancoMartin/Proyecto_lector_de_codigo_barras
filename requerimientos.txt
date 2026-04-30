@@ -33,6 +33,8 @@ COSAS A MEJORAR.
 
 !!)  crear funcionalidad de aumentar todos los productos. 
 
+!!!) crear un model_file para cada una de las acciones de ia
+
 
 
 1) utilizar el Model-File para crear varios agentes y darles contexto de lo que quiero que hagan y 
