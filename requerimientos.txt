@@ -1,28 +1,27 @@
-1) colocar que el agente este flotando por toda la app y no solo en la pagina principal
+1) ver el chat de claude y empezar a desarrollar de nuevo basandome en ese chat
 
-2) configurar el agente para que funcione correctamente cuando el usuario recibe consejos sobre cosas financieras.
 
-3) ver de que manera lo puedo exportar e instalar en otra compu a todo el sistema. 
+1) agregar el campo proovedor al formulario de ingreso de un producto
 
+2) colocar que el agente este flotando por toda la app y no solo en la pagina principal
+
+3) configurar el agente para que funcione correctamente cuando el usuario recibe consejos sobre cosas financieras.
+
+4) ver de que manera lo puedo exportar e instalar en otra compu a todo el sistema. 
+
+##) QUE AL CREAR UN PRODUCTO EL AGENTE CREE UN ATRIBUTO / ATRIBUTOS  
 
 #####################################################################################
-ESTO APARECERA SOLO CUANDO SE ELIJA LA OPCION DE AUMENTAR PRECIOS.
- (que debe estar en alguna esquina de la app)
+DONDE ESTA EL SIMBOLO DE MODELO DE IA: pondremos lo siguiente
 
-FLUJO DE APP (IA)
- 
+DESEAS AUMENTAR LOS PRECIOS?
+decile a nuestro agente que lo haga por vos!
 
-ESTO COLOCARLO AL PRINCIPIO Y SI LLEGA A ELEGIR LA A O LA B QUE EL MODELO DE IA FUNCIONE 
-UNICAMENTE PARA CONSULTAS Y PARA CREAR PRODUCTOS. 
-(ESTO SE COLOCA COMO UN MULTIPLE CHOICE)
+QUE CUANDO EL USUARIO APRIETE EL MODELO DE IA. EL MENSAJE SEA EL SIGUIENTE: 
+indica un aumento: "aumentame todos los productos un 15%"
+                    "aumentame la leche un 30%" (en vez de leche podria ser un producto del usuario al azar)
+                    "Aumentame un 40% los productos de plastico (en vez de ser plastico que sea un atributo del cliente al azar)
 
-1) Colocar que el modelo le pregunte al usuario como aumentaran los productos: 
-a) todos individualmente. 
-b) por categorias, (marca, proovedor etc)
-c) todos juntos.  
-
-Si llega a elegir la b que el modelo le pregunte cual/es es/son la/s categoria/s 
-que utilizan este aumento y que ahi funcione la ia de seleccion de funciones. 
 
 #######################################################################################
 
@@ -51,3 +50,20 @@ en base a los atributos puede ser una opcion o cualquier otro tipo de cosa
 de que manera quiere que funcione.
 
 pueden ser varios modelos y que la ia se fije el contexto del mesaje y que guarde lo que crea acorde 
+
+
+
+
+
+
+
+
+
+
+
+
+se crea el producto pelota adidas
+
+el modelo crea un atributo adidas y otro cuero
+
+el modelo en base a esos atributos crea las categorias marca y material

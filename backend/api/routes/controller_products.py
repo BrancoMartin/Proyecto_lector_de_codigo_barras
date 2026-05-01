@@ -61,3 +61,4 @@ def delete(product_id: int, service: ProductService = Depends(get_product_servic
 def get_products_by_attribute(attribute_id: int, service: ProductService = Depends(get_product_service)):
     result = service.get_products_by_attribute(attribute_id)
     return {"message": result}
+
