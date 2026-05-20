@@ -1,13 +1,8 @@
-"""
-Controller dinámico que actúa como intermediario entre el frontend y los controllers específicos.
-Detecta la intención del usuario usando LLM y ejecuta la acción correspondiente.
-"""
-
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from database import get_db
-from langchain_ollama import OllamaLLM  
+from langchain_ollama import OllamaLLM
 from langchain_core.prompts import PromptTemplate
 from services.category_service import CategoryService
 from services.attribute_service import AttributeService
@@ -15,9 +10,21 @@ from services.ai_price_service import AIPriceService
 from services.product_service import ProductService
 from dependencies import get_category_service, get_attribute_service, get_ai_service, get_product_service
 from dotenv import load_dotenv
+from models.attribute_category import AttributeCategory
+from models.attribute_value import AttributeValue
+from models.product_attribute_bridge import ProductAttributeBridge
+from models.product import Product
 import os
 import json
 import re
+
+from agent.model1_intent import detect_intent as new_detect_intent
+from agent.model2a_create_product import create_product_with_attributes
+from agent.model2b_price_type import detect_price_increase_type
+from agent.model3_detect_attr import detect_category_and_value
+from agent.model4_resolve_attr import resolve_attribute_in_db
+from agent.model5_incomplete import handle_incomplete_info as new_handle_incomplete_info
+from agent.model6_general import handle_general_query as new_handle_general_query
 
 load_dotenv()
 
@@ -37,71 +44,51 @@ def clear_pending_product(session_id: str):
 
 
 class ChatMessage(BaseModel):
-    """Modelo para los mensajes del chat"""
     message: str
     conversation_history: list = []
+    context: dict = {}
 
 
 class AgentResponse(BaseModel):
     message: str
-    action_executed: str | None = None  
+    action_executed: str | None = None
     success: bool = True
     data: dict = {}
 
 
 def get_llm():
-    """Obtiene la instancia del LLM"""
     return OllamaLLM(
-            model="qwen2.5:0.5b",  
-            base_url="http://localhost:11434",
-        )
+        model="qwen2.5:0.5b",
+        base_url="http://localhost:11434",
+    )
 
 
-
-
-def detect_intent(message: str, conversation_history: list = None, llm=None) -> dict:
-    
-    
+def detect_intent_legacy(message: str, llm=None) -> dict:
     if llm is None:
         llm = get_llm()
-    
-    if conversation_history is None:
-        conversation_history = []
-    
-    # Construir contexto del historial
-    context = "\n".join([
-        f"Usuario: {msg.get('user', '')}\nAsistente: {msg.get('assistant', '')}"
-        for msg in conversation_history[-4:]  # Últimos 4 mensajes para contexto
-    ])
-    
+
     template = """MENSAJE: "{user_message}"
 
 INTENCIONES: crear_categoria, agregar_atributo, aumentar_precios, crear_productos, consulta_general
 
 JSON:"""
-    
+
     prompt = PromptTemplate(
-        input_variables=["user_message", "context"],
+        input_variables=["user_message"],
         template=template
     )
-    
+
     chain = prompt | llm
-    
+
     try:
-        response = chain.invoke({
-            "user_message": message,
-            "context": context if context else "Conversación nueva"
-        })
-        
+        response = chain.invoke({"user_message": message})
         content = response.strip()
-        # Limpiar markdown y códigos si están presentes
         clean = content.replace("```json", "").replace("```", "").strip()
         data = json.loads(clean)
-        
         return data
     except Exception as e:
-        print(f"Error detecting intent: {e}")
-        return {"intent": "consulta_general", "confidence": 0.5, "error": str(e)}
+        print(f"[LEGACY] Error detecting intent: {e}")
+        return {"intent": "consulta_general", "confidence": 0.5}
 
 
 @router.post("/chat", response_model=AgentResponse)
@@ -113,306 +100,367 @@ def agent_chat(
     ai_price_service: AIPriceService = Depends(get_ai_service),
     product_service: ProductService = Depends(get_product_service)
 ):
-    """
-    Endpoint principal del agente dinámico.
-    Recibe un mensaje, detecta intención y ejecuta la acción correspondiente.
-    """
-    
     try:
-        llm = get_llm()
         user_message = chat_msg.message
         conversation_history = chat_msg.conversation_history or []
-        
-        # 1. Detectar intención
-        intent_result = detect_intent(user_message, conversation_history, llm)
+        context = chat_msg.context or {}
+
+        llm = get_llm()
+
+        intent_result = new_detect_intent(user_message)
         intent = intent_result.get("intent", "consulta_general")
-        
-        print(f"[AGENT] Intent detected: {intent}")
-        
-        # 2. Ejecutar acción según intención
-        
-        if intent == "crear_categoria":
+
+        if not intent or intent == "info_incompleta":
+            intent_result = detect_intent_legacy(user_message, llm)
+            intent = intent_result.get("intent", "consulta_general")
+
+        print(f"[AGENT] Intent: {intent} | Confidence: {intent_result.get('confidence', 0)}")
+
+        if intent == "aumentar_precio":
+            price_type_result = detect_price_increase_type(user_message)
+            tipo = price_type_result.get("tipo")
+            porcentaje = price_type_result.get("porcentaje")
+            target = price_type_result.get("target")
+
+            if not tipo or not porcentaje:
+                return AgentResponse(
+                    message="No entendi bien el aumento. ¿Que porcentaje queres aplicar y a que productos?",
+                    action_executed="aumentar_precio",
+                    success=False
+                )
+
+            if tipo == "todos":
+                products = db.query(Product).all()
+                updated = 0
+                for p in products:
+                    p.price = round(p.price * (1 + porcentaje / 100), 2)
+                db.commit()
+                updated = len(products)
+                return AgentResponse(
+                    message=f"✅ Se aumento el precio de TODOS los productos ({updated}) un {porcentaje}%",
+                    action_executed="aumentar_precio",
+                    success=True,
+                    data={"updated_products": updated, "percentage": porcentaje}
+                )
+
+            elif tipo == "individual":
+                products = db.query(Product).filter(Product.name.ilike(f"%{target}%")).all()
+                if not products:
+                    return AgentResponse(
+                        message=f"No encontre ningun producto que se llame '{target}'.",
+                        action_executed="aumentar_precio",
+                        success=False
+                    )
+                updated = 0
+                for p in products:
+                    p.price = round(p.price * (1 + porcentaje / 100), 2)
+                db.commit()
+                updated = len(products)
+                names = ", ".join([p.name for p in products])
+                return AgentResponse(
+                    message=f"✅ Se aumento el precio de '{names}' ({updated} producto(s)) un {porcentaje}%",
+                    action_executed="aumentar_precio",
+                    success=True,
+                    data={"updated_products": updated, "percentage": porcentaje, "products": names}
+                )
+
+            elif tipo == "por_atributo":
+                cats = db.query(AttributeCategory).all()
+                existing_categories = [{"id": c.id, "name": c.name} for c in cats]
+
+                attr_result = detect_category_and_value(target, existing_categories)
+                categoria_inf = attr_result.get("categoria_inferida")
+                valor = attr_result.get("valor")
+                categoria_existe = attr_result.get("categoria_existe", False)
+
+                if not categoria_inf:
+                    return AgentResponse(
+                        message=f"No pude determinar a que categoria pertenece '{target}'.",
+                        action_executed="aumentar_precio",
+                        success=False
+                    )
+
+                if not categoria_existe:
+                    nueva_cat = AttributeCategory(name=categoria_inf)
+                    db.add(nueva_cat)
+                    db.commit()
+                    db.refresh(nueva_cat)
+
+                cat = db.query(AttributeCategory).filter(AttributeCategory.name == categoria_inf).first()
+                if not cat:
+                    cat = AttributeCategory(name=categoria_inf)
+                    db.add(cat)
+                    db.commit()
+                    db.refresh(cat)
+
+                attr_val = db.query(AttributeValue).filter(
+                    AttributeValue.category_id == cat.id,
+                    AttributeValue.value == valor
+                ).first()
+                if not attr_val:
+                    attr_val = AttributeValue(category_id=cat.id, value=valor)
+                    db.add(attr_val)
+                    db.commit()
+                    db.refresh(attr_val)
+
+                bridges = db.query(ProductAttributeBridge).filter(
+                    ProductAttributeBridge.attribute_value_id == attr_val.id
+                ).all()
+                product_ids = [b.product_id for b in bridges]
+
+                if product_ids:
+                    products = db.query(Product).filter(Product.id.in_(product_ids)).all()
+                    updated = 0
+                    for p in products:
+                        p.price = round(p.price * (1 + porcentaje / 100), 2)
+                    db.commit()
+                    updated = len(products)
+                    return AgentResponse(
+                        message=f"✅ Se aumento un {porcentaje}% a {updated} producto(s) con {categoria_inf} = {valor}",
+                        action_executed="aumentar_precio",
+                        success=True,
+                        data={"updated_products": updated, "category": categoria_inf, "value": valor, "percentage": porcentaje}
+                    )
+
+                else:
+                    all_products = db.query(Product).all()
+                    productos_list = [
+                        {"id": p.id, "name": p.name, "description": p.description or "", "price": p.price}
+                        for p in all_products
+                    ]
+                    resolve_result = resolve_attribute_in_db(categoria_inf, valor, categoria_existe, productos_list)
+                    if resolve_result.get("puede_inferir"):
+                        detected_ids = resolve_result.get("productos_detectados", [])
+                        if detected_ids:
+                            products = db.query(Product).filter(Product.id.in_(detected_ids)).all()
+                            for p in products:
+                                bridge = ProductAttributeBridge(product_id=p.id, attribute_value_id=attr_val.id)
+                                db.add(bridge)
+                                p.price = round(p.price * (1 + porcentaje / 100), 2)
+                            db.commit()
+                            return AgentResponse(
+                                message=f"✅ Se aumento un {porcentaje}% a {len(products)} producto(s) con {categoria_inf} = {valor}",
+                                action_executed="aumentar_precio",
+                                success=True,
+                                data={"updated_products": len(products), "category": categoria_inf, "value": valor, "percentage": porcentaje}
+                            )
+                    return AgentResponse(
+                        message=resolve_result.get("mensaje_usuario", f"No pude determinar que productos tienen {categoria_inf} = {valor}. ¿Podes indicarmelo?"),
+                        action_executed="aumentar_precio",
+                        success=False,
+                        data={"context": {"intent": "aumentar_precio", "categoria": categoria_inf, "valor": valor, "porcentaje": porcentaje}}
+                    )
+
+            return AgentResponse(
+                message="No pude procesar el aumento. Asegurate de incluir el porcentaje.",
+                action_executed="aumentar_precio",
+                success=False
+            )
+
+        elif intent == "crear_producto":
+            cats = db.query(AttributeCategory).all()
+            existing_categories = [{"id": c.id, "name": c.name} for c in cats]
+
+            product_data = create_product_with_attributes(user_message, existing_categories)
+            nombre = product_data.get("nombre")
+            precio = product_data.get("precio")
+
+            if not nombre:
+                return AgentResponse(
+                    message="No entendi el nombre del producto. ¿Podes repetirlo?",
+                    action_executed="crear_producto",
+                    success=False
+                )
+
+            if not precio:
+                save_pending_product("default", product_data)
+                return AgentResponse(
+                    message=f"Producto: {nombre}\n\n¿Que precio tiene?",
+                    action_executed="crear_producto",
+                    success=True,
+                    data={"product_data": product_data, "awaiting_price": True}
+                )
+
+            if re.match(r"^\d+$", user_message.strip()):
+                pending = get_pending_product("default")
+                if pending:
+                    product_data = pending
+                    product_data["barcode"] = user_message.strip()
+
+            if "barcode" not in product_data or not product_data.get("barcode"):
+                save_pending_product("default", product_data)
+                return AgentResponse(
+                    message=f"Datos del producto:\nNombre: {nombre}\nPrecio: ${precio}\n\nAhora escaneá o ingresá el codigo de barras.",
+                    action_executed="crear_producto",
+                    success=True,
+                    data={"product_data": product_data}
+                )
+
+            try:
+                result = product_service.create(
+                    barcode=product_data["barcode"],
+                    name=nombre,
+                    price=float(precio),
+                    description=product_data.get("descripcion")
+                )
+                if result:
+                    atributos_inf = product_data.get("atributos_inferidos", [])
+                    if atributos_inf:
+                        for attr in atributos_inf:
+                            cat_name = attr.get("categoria")
+                            val = attr.get("valor")
+                            if cat_name and val:
+                                ac = db.query(AttributeCategory).filter(AttributeCategory.name == cat_name).first()
+                                if not ac:
+                                    ac = AttributeCategory(name=cat_name)
+                                    db.add(ac)
+                                    db.commit()
+                                    db.refresh(ac)
+                                av = db.query(AttributeValue).filter(
+                                    AttributeValue.category_id == ac.id,
+                                    AttributeValue.value == val
+                                ).first()
+                                if not av:
+                                    av = AttributeValue(category_id=ac.id, value=val)
+                                    db.add(av)
+                                    db.commit()
+                                    db.refresh(av)
+                                bridge = ProductAttributeBridge(product_id=result.id, attribute_value_id=av.id)
+                                db.add(bridge)
+                        db.commit()
+
+                    clear_pending_product("default")
+                    return AgentResponse(
+                        message=f"✅ Producto '{nombre}' creado exitosamente!",
+                        action_executed="crear_producto",
+                        success=True,
+                        data=result
+                    )
+                else:
+                    return AgentResponse(
+                        message="❌ Error al crear el producto. Intenta de nuevo.",
+                        action_executed="crear_producto",
+                        success=False
+                    )
+            except Exception as e:
+                return AgentResponse(
+                    message=f"❌ Error al crear producto: {str(e)}",
+                    action_executed="crear_producto",
+                    success=False
+                )
+
+        elif intent == "crear_categoria":
             result = category_service.create_categories(user_message, conversation_history)
             if result.get("success"):
                 return AgentResponse(
-                    message=f"✅ Se crearon exitosamente las siguientes categorías: {', '.join([c.get('category') for c in result.get('categories', [])])}\n\nAhora puedes decirme qué atributos tiene cada categoría o pedir un aumento de precios.",
+                    message=f"✅ Categorias creadas: {', '.join([c.get('category') for c in result.get('categories', [])])}",
                     action_executed="crear_categoria",
                     success=True,
                     data={"categories": result.get("categories", [])}
                 )
             else:
                 return AgentResponse(
-                    message=f"❌ Error al crear categorías: {result.get('error')}",
+                    message=f"❌ Error: {result.get('error')}",
                     action_executed="crear_categoria",
-                    success=False,
-                    data={"error": result.get("error")}
+                    success=False
                 )
-        
-        elif intent == "aumentar_precios":
-            result = ai_price_service.calculate_final_price(user_message, conversation_history)
-            if result.get("success"):
-                return AgentResponse(
-                    message=f"✅ Se aumentaron {result.get('updated_products', 0)} productos de '{result.get('category')}' un {result.get('percentage', 0)*100:.0f}%",
-                    action_executed="aumentar_precios",
-                    success=True,
-                    data={
-                        "category": result.get("category"),
-                        "percentage": result.get("percentage"),
-                        "updated_products": result.get("updated_products")
-                    }
-                )
-            else:
-                return AgentResponse(
-                    message=f"❌ No puedo aumentar precios: {result.get('error')}\n\nProbablemente la categoría especificada no existe o no tiene atributos configurados. ¿Quieres crear una categoría primero?",
-                    action_executed="aumentar_precios",
-                    success=False,
-                    data={"error": result.get("error")}
-                )
-        
-        
-        elif intent == "agregar_atributo":
+
+        elif intent == "agregar_valor":
             result = attribute_service.create_attributes_from_prompt(user_message, conversation_history)
             if result.get("success"):
-                attrs_created = ", ".join([a.get("attribute") for a in result.get("attributes_created", [])])
                 return AgentResponse(
-                    message=f"✅ Se agregaron los siguientes atributos a '{result.get('category')}': {attrs_created}\n\nAhora puedes usar estos atributos para aumentar precios.",
-                    action_executed="agregar_atributo",
+                    message=f"✅ Valores agregados a '{result.get('category')}': {', '.join([a.get('attribute') for a in result.get('attributes_created', [])])}",
+                    action_executed="agregar_valor",
                     success=True,
                     data={"attributes": result.get("attributes_created", [])}
                 )
             else:
                 return AgentResponse(
-                    message=f"❌ No pude agregar los atributos: {result.get('error')}\n\nAsegúrate de mencionar la categoría correcta.",
-                    action_executed="agregar_atributo",
-                    success=False,
-                    data={"error": result.get("error")}
-                )
-        
-        elif intent == "listar_categorias": 
-            categories = category_service.get_categories()
-            attributes = attribute_service.get_attributes()
-            
-            if categories.get("success") and attributes.get("success"):
-                cat_list = categories.get("categories", categories.get("data", []))
-                attr_list = attributes.get("attributes", attributes.get("data", []))
-                
-                # Convertir a diccionarios si es necesario
-                if cat_list and hasattr(cat_list[0], '__dict__'):
-                    cat_list = [{"id": c.id, "category": c.category} for c in cat_list]
-                if attr_list and hasattr(attr_list[0], '__dict__'):
-                    attr_list = [{"id": a.id, "attribute": a.attribute, "category_id": a.category_id} for a in attr_list]
-                
-                message_content = "📋 **Categorías configuradas:**\n\n"
-                if cat_list:
-                    for cat in cat_list:
-                        cat_name = cat.get('category', cat) if isinstance(cat, dict) else cat
-                        cat_id = cat.get('id', None) if isinstance(cat, dict) else None
-                        message_content += f"• {cat_name}\n"
-                        # Filtrar atributos de esta categoría
-                        cat_attrs = [a for a in attr_list if isinstance(a, dict) and a.get('category_id') == cat_id]
-                        if cat_attrs:
-                            for attr in cat_attrs:
-                                message_content += f"  - {attr.get('attribute', attr)}\n"
-                else:
-                    message_content += "Sin categorías configuradas aún.\n"
-                
-                return AgentResponse(
-                    message=message_content + "\n¿Quieres agregar más categorías o atributos?",
-                    action_executed="listar_categorias",
-                    success=True,
-                    data={"categories": cat_list, "attributes": attr_list}
-                )
-            else:
-                return AgentResponse(
-                    message="No pude cargar las categorías. Intenta de nuevo.",
-                    action_executed="listar_categorias",
+                    message=f"❌ Error: {result.get('error')}",
+                    action_executed="agregar_valor",
                     success=False
                 )
-            
-        elif intent == "informacion_incompleta":
-            # Hacer preguntas al usuario para completar la información
-            questions = generate_clarification_questions(user_message, llm)
-            return AgentResponse(
-                message=questions,
-                action_executed="informacion_incompleta",
-                success=True,
-                data={}
-            )
-        elif intent == "crear_productos":
-            try:
-                # Verificar si el mensaje es un barcode (solo números)
-                if re.match(r"^\d+$", user_message.strip()):
-                    pending = get_pending_product("default")
-                    
-                    if not pending:
-                        return AgentResponse(
-                            message="No tengo ningún producto pendiente. Primero decime el nombre y precio del producto.",
-                            action_executed="crear_productos",
-                            success=False
-                        )
-                    
-                    pending = get_pending_product("default")
-                    result = product_service.create(
-                        barcode=user_message.strip(),
-                        name=pending["nombre"],
-                        price=float(pending["precio"]),
-                        description=pending.get("descripcion")  
-                    )
-                    clear_pending_product("default")
 
-                    print("RESULTADO DE LA CREACION", result)
-                    
-                    if result:
-                        return AgentResponse(
-                            message=f"✅ Producto '{pending['nombre']}' creado exitosamente con el código {user_message.strip()}!",
-                            action_executed="crear_productos",
-                            success=True,
-                            data=result
-                        )
-                    else:
-                        return AgentResponse(
-                            message=f"❌ Error al crear el producto: {result.get('error')}",
-                            action_executed="crear_productos",
-                            success=False,
-                            data={"error": result.get("error")}
-                        )
-                
-                else:
-                    # Extraer nombre, precio y descripción del mensaje con el LLM
-                    template = """Extrae los datos del producto del mensaje del usuario. Devolvé ÚNICAMENTE un JSON válido.
-
-                    Mensaje: "{user_message}"
-
-                    REGLAS:
-                    - "nombre": el nombre del producto
-                    - "precio": solo el número, sin símbolos (ej: 30000)
-                    - "descripcion": si la menciona, sino null
-
-                    FORMATO (sin markdown, sin código, solo JSON):
-                    {{"nombre": "nombre del producto", "precio": 999.99, "descripcion": null}}
-
-                    JSON:"""
-
-                    prompt = PromptTemplate(
-                        input_variables=["user_message"],
-                        template=template
-                    )
-
-                    chain = prompt | llm
-                    response = chain.invoke({"user_message": user_message})
-
-                    print("RESPUESTA DE LA IA EN EL CREATE PRODUCT", response)
-
-                    content = response.strip().replace("```json", "").replace("```", "").strip()
-                    product_data = json.loads(content)
-                    
-                    save_pending_product("default", product_data)
-
-                    desc_text = f"Descripción: {product_data.get('descripcion')}\n" if product_data.get("descripcion") else ""
-
-                    return AgentResponse(
-                        message=f"Perfecto! Tengo los datos del producto:\n"
-                                f"Nombre: {product_data['nombre']}\n"
-                                f"Precio: ${product_data['precio']}\n"
-                                f"{desc_text}"
-                                f"\nAhora escaneá o ingresá el código de barras para crear el producto.",
-                        action_executed="crear_productos",
-                        success=True,
-                        data=product_data
-                    )
-            
-            except Exception as e:
+        elif intent == "listar_categorias":
+            cats = db.query(AttributeCategory).all()
+            if cats:
+                lines = ["**Categorias y valores disponibles:**\n"]
+                for c in cats:
+                    values = db.query(AttributeValue).filter(AttributeValue.category_id == c.id).all()
+                    vals_str = ", ".join([v.value for v in values]) if values else "sin valores"
+                    lines.append(f"• {c.name}: {vals_str}")
                 return AgentResponse(
-                    message=f"❌ Error al procesar el producto: {str(e)}",
-                    action_executed="crear_productos",
-                    success=False,
-                    data={"error": str(e)}
+                    message="\n".join(lines),
+                    action_executed="listar_categorias",
+                    success=True,
+                    data={"categories": [{"id": c.id, "name": c.name} for c in cats]}
                 )
-        
-        else:  # consulta_general o sin intención clara
-            # Responder como asesor financiero
-            response = financial_advisor_response(user_message, conversation_history, llm)
+            else:
+                categories_result = category_service.get_categories()
+                if categories_result.get("success") and categories_result.get("categories"):
+                    cat_list = categories_result["categories"]
+                    if cat_list and hasattr(cat_list[0], '__dict__'):
+                        cat_list = [{"id": c.id, "category": c.category} for c in cat_list]
+                    message_content = "📋 **Categorias configuradas:**\n\n" + "\n".join([f"• {c.get('category', c)}" for c in cat_list])
+                    return AgentResponse(
+                        message=message_content,
+                        action_executed="listar_categorias",
+                        success=True,
+                        data={"categories": cat_list}
+                    )
+                return AgentResponse(
+                    message="No hay categorias configuradas. ¿Queres crear alguna?",
+                    action_executed="listar_categorias",
+                    success=True
+                )
+
+        elif intent == "info_incompleta":
+            ctx = context or intent_result
+            result = new_handle_incomplete_info(user_message, ctx)
+            return AgentResponse(
+                message=result.get("pregunta", "No entendi bien. ¿Podes darme mas detalles?"),
+                action_executed="info_incompleta",
+                success=True,
+                data={"missing_field": result.get("campo_faltante"), "context": ctx}
+            )
+
+        else:
+            total_products = db.query(Product).count()
+            bridge_count = db.query(ProductAttributeBridge).count()
+            avg_price = db.query(Product).with_entities(db.func.avg(Product.price)).scalar()
+            min_price = db.query(Product).with_entities(db.func.min(Product.price)).scalar()
+            max_price = db.query(Product).with_entities(db.func.max(Product.price)).scalar()
+
+            cats = db.query(AttributeCategory).all()
+            cat_stats = {}
+            for c in cats:
+                val_count = db.query(AttributeValue).filter(AttributeValue.category_id == c.id).count()
+                cat_stats[c.name] = val_count
+
+            db_stats = {
+                "total_productos": total_products,
+                "productos_sin_atributos": total_products - bridge_count if total_products > 0 else 0,
+                "precio_promedio": round(avg_price, 2) if avg_price else 0,
+                "precio_minimo": min_price if min_price else 0,
+                "precio_maximo": max_price if max_price else 0,
+                "categorias_y_valores": cat_stats
+            }
+
+            response = new_handle_general_query(user_message, db_stats)
             return AgentResponse(
                 message=response,
-                action_executed=None,
+                action_executed="consulta_general",
                 success=True,
-                data={}
+                data={"stats": db_stats}
             )
-         
+
     except Exception as e:
-        print(f"[ERROR] Agent chat error: {e}")
+        print(f"[ERROR] Agent: {e}")
         import traceback
         traceback.print_exc()
         return AgentResponse(
-            message=f"❌ Ocurrió un error: {str(e)}",
+            message=f"❌ Ocurrio un error: {str(e)}",
             action_executed=None,
             success=False,
             data={"error": str(e)}
         )
-
-
-def generate_clarification_questions(user_message: str, llm) -> str:
-    """Genera preguntas de clarificación cuando falta información"""
-    
-    template = """El usuario intentó hacer algo pero falta información. 
-Haz preguntas claras y amigables para obtener los datos faltantes.
-
-Mensaje: "{user_message}"
-
-Responde como un asesor amigable, haz preguntas específicas y directas.
-Sin markdown, texto plano, máximo 3-4 líneas."""
-    
-    prompt = PromptTemplate(
-        input_variables=["user_message"],
-        template=template
-    )
-    
-    chain = prompt | llm
-    
-    try:
-        response = chain.invoke({"user_message": user_message})
-        return response
-    except Exception as e:
-        return f"Necesito más información. ¿Qué categoría o atributo quieres modificar?"
-
-
-def financial_advisor_response(user_message: str, conversation_history: list = None, llm=None) -> str:
-    """Genera una respuesta como asesor financiero para consultas generales"""
-    
-    if llm is None:
-        llm = get_llm()
-    
-    if conversation_history is None:
-        conversation_history = []
-    
-    context = "\n".join([
-        f"Usuario: {msg.get('user', '')}\nAsistente: {msg.get('assistant', '')}"
-        for msg in conversation_history[-3:]
-    ])
-    
-    template = """Eres un asesor financiero amigable que ayuda a pequeños negocios con estrategias de precios, márgenes y gestión de inventario.
-
-CONTEXTO:
-{context}
-
-USUARIO PREGUNTA: "{user_message}"
-
-Responde de forma clara, práctica y amigable. Máximo 3-4 párrafos. 
-Sugiere acciones concretas si es posible (ej: "prueba aumentar un 15% en categorías de mayor demanda").
-Sin markdown, texto plano."""
-    
-    prompt = PromptTemplate(
-        input_variables=["user_message", "context"],
-        template=template
-    )
-    
-    chain = prompt | llm
-    
-    try:
-        response = chain.invoke({
-            "user_message": user_message,
-            "context": context if context else "Conversación nueva"
-        })
-        return response
-    except Exception as e:
-        return "No puedo procesar esa pregunta en este momento. Intenta nuevamente."

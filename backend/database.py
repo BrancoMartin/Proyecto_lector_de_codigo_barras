@@ -22,8 +22,7 @@ Base = declarative_base()
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 def init_db():
-    # crea las tablas en la base de datos si no existen
-    from models import product, sale, sale_item
+    from models import product, sale, sale_item, attribute_category, attribute_value, product_attribute_bridge
     Base.metadata.create_all(bind=engine)
 
 def get_db():

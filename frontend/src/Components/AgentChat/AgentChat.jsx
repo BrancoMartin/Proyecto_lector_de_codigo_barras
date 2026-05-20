@@ -3,88 +3,131 @@ import axios from "axios";
 import "./AgentChat.css";
 
 function AgentChat({ onClose }) {
-  const [messages, setMessages] = useState([
-    {
-      id: 1,
-      type: "assistant",
-      text: "Para poder aumentar los precios primero necesito que me digas como suelen aumentar tus productos. ejemplo: \n a) Todos individualmente \n b) Por marca, material, proovedor etc. \n c) Todos juntos",
-    },
-  ]);
+  const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef(null);
-  const [conversationHistory, setConversationHistory] = useState([]);
-  const [categories, setCategories] = useState([]);
+  const [conversationHistory, setConversationHistory] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem("agentChatHistory") || "[]");
+    } catch {
+      return [];
+    }
+  });
+  const [context, setContext] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem("agentChatContext") || "{}");
+    } catch {
+      return {};
+    }
+  });
+  const [initialized, setInitialized] = useState(false);
 
-  // Auto-scroll al final de los mensajes
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   useEffect(() => {
-    const fetchCategories = async () => {
-      const categories = await axios.get("/api/category");
-      if (categories.length > 0) {
-        setCategories(categories);
+    const buildWelcomeMessage = async () => {
+      try {
+        const catResp = await axios.get("/api/attribute_categories");
+        const cats = catResp.data || [];
+        const prodResp = await axios.get("/api/products");
+        const prods = prodResp.data || [];
+
+        let examples = [];
+
+        if (prods.length > 0) {
+          const randomProd = prods[Math.floor(Math.random() * prods.length)];
+          examples.push(`"Aumentame ${randomProd.name} un 30%"`);
+        } else {
+          examples.push(`"Aumentame un producto un 20%"`);
+        }
+
+        if (cats.length > 0) {
+          const randomCat = cats[Math.floor(Math.random() * cats.length)];
+          const valResp = await axios.get(`/api/attribute_values?category_id=${randomCat.id}`);
+          const vals = valResp.data || [];
+          if (vals.length > 0) {
+            const randomVal = vals[Math.floor(Math.random() * vals.length)];
+            examples.push(`"Aumentame los de ${randomVal.value} un 20%"`);
+          }
+        }
+
+        examples.push(`"Aumentame todos los productos un 15%"`);
+        examples.push(`"Crea una categoria marca"`);
+        examples.push(`"Agrega Samsung a marca"`);
+        examples.push(`"Cuantos productos tengo?"`);
+
+        const welcomeText = `¡Hola! Soy tu asistente de precios. Podes pedirme cosas como:\n\n${examples.map((e, i) => `${i + 1}. ${e}`).join("\n")}`;
+
+        setMessages([
+          { id: 1, type: "assistant", text: welcomeText }
+        ]);
+      } catch {
         setMessages([
           {
             id: 1,
             type: "assistant",
-            text: `Decime, ejemplo: "aumentáme los precios de la categoria ${categories[0]} un 15%"`,
+            text: `¡Hola! Soy tu asistente de precios. Podes pedirme cosas como:\n\n1. "Aumentame todos los productos un 15%"\n2. "Aumentame la leche un 30%"\n3. "Crea una categoria marca"\n4. "Agrega Samsung a marca"\n5. "Cuantos productos tengo?"`,
           },
         ]);
       }
+      setInitialized(true);
     };
-    fetchCategories();
-  }, [categories]);
+
+    if (!initialized) {
+      buildWelcomeMessage();
+    }
+  }, [initialized]);
 
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
-  // Enviar mensaje al agente
+  useEffect(() => {
+    localStorage.setItem("agentChatContext", JSON.stringify(context));
+  }, [context]);
+
   const handleSendMessage = async (e) => {
     e.preventDefault();
 
     if (!input.trim()) return;
 
-    // Agregar mensaje del usuario a la UI
     const userMessage = {
-      id: messages.length + 1,
+      id: Date.now(),
       type: "user",
       text: input,
     };
 
     setMessages((prev) => [...prev, userMessage]);
+    const sentInput = input;
     setInput("");
     setLoading(true);
 
     try {
-      // Preparar historial de conversación para enviar al backend
       const conversationForBackend = conversationHistory.map((msg) => ({
         user: msg.user || "",
         assistant: msg.assistant || "",
       }));
 
-      // Llamar al endpoint del agente
       const response = await axios.post(
         "http://localhost:8000/api/agent/chat",
         {
-          message: input,
+          message: sentInput,
           conversation_history: conversationForBackend,
+          context: context,
         },
         {
-          headers: {
-            "Content-Type": "application/json",
-          },
-        },
+          headers: { "Content-Type": "application/json" },
+          timeout: 120000,
+        }
       );
 
       const data = response.data;
 
-      // Agregar respuesta del asistente
       const assistantMessage = {
-        id: messages.length + 2,
+        id: Date.now() + 1,
         type: "assistant",
         text: data.message,
         actionExecuted: data.action_executed,
@@ -94,53 +137,58 @@ function AgentChat({ onClose }) {
 
       setMessages((prev) => [...prev, assistantMessage]);
 
-      // Actualizar historial de conversación
       const newHistory = [
         ...conversationHistory,
-        {
-          user: input,
-          assistant: data.message,
-        },
+        { user: sentInput, assistant: data.message },
       ];
       setConversationHistory(newHistory);
-
-      // Guardar historial en localStorage para persistencia
       localStorage.setItem("agentChatHistory", JSON.stringify(newHistory));
+
+      if (data.data && data.data.context) {
+        setContext(data.data.context);
+      }
     } catch (error) {
-      console.error("Error sending message to agent:", error);
-
-      const errorMessage = {
-        id: messages.length + 2,
-        type: "assistant",
-        text: "❌ Disculpa, ocurrió un error al procesar tu mensaje. Intenta nuevamente.",
-        error: true,
-      };
-
-      setMessages((prev) => [...prev, errorMessage]);
+      console.error("Error sending message:", error);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now() + 1,
+          type: "assistant",
+          text: "❌ Disculpa, ocurrio un error al procesar tu mensaje. Intenta nuevamente.",
+          error: true,
+        },
+      ]);
     } finally {
       setLoading(false);
     }
   };
 
-  // Cargar historial al montar el componente
-  useEffect(() => {
-    const savedHistory = localStorage.getItem("agentChatHistory");
-    if (savedHistory) {
-      try {
-        setConversationHistory(JSON.parse(savedHistory));
-      } catch (error) {
-        console.error("Error loading chat history:", error);
-      }
-    }
-  }, []);
+  const handleClearChat = () => {
+    setMessages([
+      {
+        id: 1,
+        type: "assistant",
+        text: "¡Hola! ¿En que puedo ayudarte con los precios?",
+      },
+    ]);
+    setConversationHistory([]);
+    setContext({});
+    localStorage.removeItem("agentChatHistory");
+    localStorage.removeItem("agentChatContext");
+  };
 
   return (
     <aside className="agent-chat-panel">
       <div className="chat-header">
         <h3>Asistente de Precios</h3>
-        <button className="close-btn" onClick={onClose} title="Cerrar chat">
-          ✕
-        </button>
+        <div className="header-actions">
+          <button className="clear-btn" onClick={handleClearChat} title="Limpiar chat">
+            🗑️
+          </button>
+          <button className="close-btn" onClick={onClose} title="Cerrar chat">
+            ✕
+          </button>
+        </div>
       </div>
 
       <div className="chat-messages">
@@ -183,7 +231,7 @@ function AgentChat({ onClose }) {
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Escribe tu mensaje aquí..."
+          placeholder="Escribe tu mensaje aqui..."
           disabled={loading}
           className="chat-input"
         />
